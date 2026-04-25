@@ -48,11 +48,14 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
 
 .progress-container {
   flex-grow: 1;
-  height: 4px;
+  height: 3px;
   background: #fff5d6;
   cursor: pointer;
   position: relative;
-    border-radius: 4px;
+  border-radius: 4px;
+  /* invisible padding for easy clicks*/
+  padding: 10px 0; 
+  background-clip: content-box; 
 }
 
 #progressBar {
