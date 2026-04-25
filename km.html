@@ -36,6 +36,37 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
     color: #333;
     line-height: 1.6;
 }
+
+.custom-player {
+  display: flex;
+  align-items: center;
+  background: #222; /* Dark background */
+  padding: 10px;
+  border-radius: 8px;
+  gap: 10px;
+}
+
+.progress-container {
+  flex-grow: 1;
+  height: 8px;
+  background: #444; /* Grey background track */
+  cursor: pointer;
+  position: relative;
+}
+
+#progressBar {
+  width: 0%;
+  height: 100%;
+  background: #000; /* YOUR BLACK LOADING BAR */
+  border: 1px solid #555;
+}
+
+#playBtn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -44,8 +75,13 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
     <span class="latin-name">Parus major</span>
 </div>
 <div class="info-box">
-   <p><audio controls src="audio/km.mp3" style="width: 100%; margin-top: 10px;"></audio>
-    </p>
+  <div class="custom-player">
+  <button id="playBtn">▶</button>
+  <div class="progress-container">
+    <div id="progressBar"></div>
+  </div>
+  <audio id="myAudio" src="audio/km.mp3"></audio>
+</div>
    <p>xeno-canto.org (XC707385)<br>
     Sonothèque ADVL<br>
     Genêts, Manche, Normandie, France
