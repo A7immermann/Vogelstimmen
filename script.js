@@ -1,34 +1,75 @@
-//elements from the HTML
 const audio = document.getElementById('myAudio');
 const playBtn = document.getElementById('playBtn');
 const progressBar = document.getElementById('progressBar');
 const progressContainer = document.querySelector('.progress-container');
 
-//play & pause
+let isDragging = false;
+let wasPlayingBeforeDrag = false;
+
+// 1. Play/Pause Toggle
 playBtn.addEventListener('click', () => {
-  if (audio.paused) {
-    audio.play();
-    playBtn.textContent = '⏸';
-  } else {
-    audio.pause();
-    playBtn.textContent = '▶';
-  }
+    togglePlay();
 });
 
-//progress bar
+function togglePlay() {
+    if (audio.paused) {
+        audio.play();
+        playBtn.textContent = '⏸';
+    } else {
+        audio.pause();
+        playBtn.textContent = '▶';
+    }
+}
+
+// 2. Update bar during normal playback
 audio.addEventListener('timeupdate', () => {
-  if (audio.duration) {
+    if (!isDragging && audio.duration) {
+        updateProgressUI();
+    }
+});
+
+function updateProgressUI() {
     const percentage = (audio.currentTime / audio.duration) * 100;
     progressBar.style.width = percentage + '%';
-  }
+}
+
+// 3. Dragging Logic
+const handleMove = (e) => {
+    const width = progressContainer.clientWidth;
+    // Calculate click position relative to the bar
+    const rect = progressContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left; 
+    
+    // Calculate percentage (clamped between 0 and 100)
+    let percentage = (x / width) * 100;
+    percentage = Math.max(0, Math.min(percentage, 100));
+
+    // Update Visuals and Audio Time immediately
+    progressBar.style.width = percentage + '%';
+    audio.currentTime = (percentage / 100) * audio.duration;
+};
+
+progressContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    wasPlayingBeforeDrag = !audio.paused;
+    
+    audio.pause(); // Stop playing while dragging
+    handleMove(e); // Update position immediately on click
 });
 
-//jump
-progressContainer.addEventListener('click', (e) => {
-    const width = progressContainer.clientWidth;
-    const clickX = e.offsetX;
-    const duration = audio.duration;
+window.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+        handleMove(e);
+    }
+});
 
-    
-    audio.currentTime = (clickX / width) * duration;
+window.addEventListener('mouseup', () => {
+    if (isDragging) {
+        isDragging = false;
+        // If it was playing before we grabbed it, start playing again
+        if (wasPlayingBeforeDrag) {
+            audio.play();
+            playBtn.textContent = '⏸';
+        }
+    }
 });
