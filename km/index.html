@@ -81,15 +81,20 @@
 
         .visualizer-container {
   width: 100%;
-  height: 80px;
-  margin-bottom: 5px; /* Tighten space to progress bar */
-  overflow: visible;
+  height: 80px; /* You can change this height freely now */
+  margin-bottom: 5px;
   display: block;
-  /* Match the progress bar container horizontal alignment */
+  /* Match the progress-container's padding so the lines align vertically */
   padding: 0; 
-  box-sizing: border-box;
+  overflow: visible;
 }
 
+/* Ensure the SVG inside fills the container but respects its height */
+.visualizer-container svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
     </style>
     <script src="../script.js" defer></script>
@@ -109,7 +114,7 @@
             </div>
             <audio id="myAudio"></audio>
         </div>
-        <p>test7 xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p> 
+        <p>test8 xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p> 
     </div>
 </body>
 </html>
