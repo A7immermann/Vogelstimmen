@@ -99,6 +99,9 @@ padding: 10px 0;
 
 background-clip: content-box;
 touch-action: none;
+-webkit-user-select: none; /* Safari */
+    user-select: none;         /* Standard */
+    -webkit-tap-highlight-color: transparent;
 
 }
 
@@ -116,6 +119,10 @@ border: .5px solid black;
 border-radius: 4px;
 
 pointer-events: none;
+-webkit-user-select: none; /* Safari */
+    user-select: none;         /* Standard */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
 
 }
 
@@ -154,6 +161,9 @@ justify-content: flex-start;
 padding: 0;
     -webkit-tap-highlight-color: transparent; 
     font-family: sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none;
 
 }
 
