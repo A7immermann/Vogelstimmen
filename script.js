@@ -7,9 +7,7 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 
 // 1. Play/Pause Toggle
-playBtn.addEventListener('click', () => {
-    togglePlay();
-});
+playBtn.addEventListener('click', togglePlay);
 
 function togglePlay() {
     if (audio.paused) {
@@ -21,59 +19,51 @@ function togglePlay() {
     }
 }
 
-// 2. Smooth Animation Loop
-function smoothUpdate() {
-    if (!isDragging && !audio.paused) {
-        updateProgressUI();
-    }
-    // Keep the loop running
-    requestAnimationFrame(smoothUpdate);
-}
-
-// Start the loop
-requestAnimationFrame(smoothUpdate);
-
-function updateProgressUI() {
-    if (audio.duration) {
+// 2. High-Framerate Render Loop (The "Liquid" Engine)
+function render() {
+    // This runs ~60 times per second
+    if (!audio.paused && !isDragging && audio.duration) {
         const percentage = (audio.currentTime / audio.duration) * 100;
         progressBar.style.width = percentage + '%';
     }
+    requestAnimationFrame(render);
 }
+
+// Kick off the loop immediately
+requestAnimationFrame(render);
 
 // 3. Dragging Logic
 const handleMove = (e) => {
-    const width = progressContainer.clientWidth;
-    // Calculate click position relative to the bar
     const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left; 
+    const x = e.clientX - rect.left;
+    const width = progressContainer.clientWidth;
     
-    // Calculate percentage (clamped between 0 and 100)
     let percentage = (x / width) * 100;
     percentage = Math.max(0, Math.min(percentage, 100));
 
-    // Update Visuals and Audio Time immediately
+    // Update bar visually for instant feedback
     progressBar.style.width = percentage + '%';
-    audio.currentTime = (percentage / 100) * audio.duration;
+    
+    // Update audio position
+    if (audio.duration) {
+        audio.currentTime = (percentage / 100) * audio.duration;
+    }
 };
 
 progressContainer.addEventListener('mousedown', (e) => {
     isDragging = true;
     wasPlayingBeforeDrag = !audio.paused;
-    
-    audio.pause(); // Stop playing while dragging
-    handleMove(e); // Update position immediately on click
+    audio.pause();
+    handleMove(e);
 });
 
 window.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-        handleMove(e);
-    }
+    if (isDragging) handleMove(e);
 });
 
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        // If it was playing before we grabbed it, start playing again
         if (wasPlayingBeforeDrag) {
             audio.play();
             playBtn.textContent = '⏸';
