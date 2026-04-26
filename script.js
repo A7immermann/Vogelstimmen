@@ -75,32 +75,35 @@ function render() {
         let points = [];
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            const baseIndex = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
-            let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
-            
-            let norm = val / 255;
-            let threshold = 0.35; 
-            let targetDisplacement = 0;
+    // 1. Zoom into bird chirp frequencies (skipping dead bass)
+    const startOffset = 4; 
+    const baseIndex = startOffset + Math.floor((i / POINT_COUNT) * (bufferLength * 0.35));
+    
+    let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
+    let norm = val / 255;
+    let threshold = 0.30; 
+    let targetDisplacement = 0;
 
-            if (norm > threshold) {
-                let activeVal = (norm - threshold) / (1 - threshold);
-                activeVal = Math.sin(activeVal * Math.PI / 2);
-                // Multiplier 0.95 ensures it reaches nearly the top but never clips
-                targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
-            }
+    if (norm > threshold) {
+        let activeVal = (norm - threshold) / (1 - threshold);
+        activeVal = Math.sin(activeVal * Math.PI / 2);
+        targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
+    }
 
-            const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
+    const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
 
-            // Asymmetric Smoothing
-            if (targetY < currentY[i]) {
-                currentY[i] += (targetY - currentY[i]) * 0.8;
-            } else {
-                currentY[i] += (targetY - currentY[i]) * 0.15;
-            }
+    // Asymmetric Smoothing
+    if (targetY < currentY[i]) {
+        currentY[i] += (targetY - currentY[i]) * 0.8;
+    } else {
+        currentY[i] += (targetY - currentY[i]) * 0.15;
+    }
 
-            points.push({ x: i, y: currentY[i] });
-        }
-
+    // 2. FORCE THE X-COORDINATE
+    // This ensures point 0 is at 0 and point 79 is exactly at the right edge
+    let xPos = (i / (POINT_COUNT - 1)) * POINT_COUNT;
+    points.push({ x: xPos, y: currentY[i] });
+}
         let d = `M ${points[0].x} ${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
