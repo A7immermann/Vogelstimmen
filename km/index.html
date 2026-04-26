@@ -94,22 +94,24 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
 .visualizer-container {
   display: flex;
   align-items: flex-end;
-  justify-content: center; /* Center the bars */
+  /* Change to space-between to push bars to the full width */
+  justify-content: space-between; 
   width: 100%;
   height: 80px;
   margin-bottom: 15px;
-  background-color: transparent; /* Container is now clear */
-  gap: 10px; /* Space between bars */
+  background-color: transparent;
+  /* Remove the fixed gap; space-between handles it now */
 }
 
 .vis-bar {
-  background-color: #fff5d6; /* Light yellow fill */
-  border: 0.5px solid #000;  /* 0.5px black border */
-  width: 3.5px;             /* Specific width requested */
-  height: 0;                /* Invisible at start */
-   border-radius: 4px;
-  transition: height 0.08s ease; /* Smooth motion */
-  box-sizing: border-box;    /* Ensures border stays inside the 3.5px */
+  background-color: #fff5d6;
+  border: 0.5px solid #000;
+  width: 3.5px;
+  height: 0;
+  opacity: 0; /* Ensures they stay hidden at start */
+  border-radius: 4px 4px 0 0;
+  transition: height 0.08s ease, opacity 0.2s ease;
+  box-sizing: border-box;
 }
     </style>
     <script src="../script.js" defer></script>

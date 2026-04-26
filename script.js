@@ -58,24 +58,23 @@ function togglePlay() {
 
 // 4. Liquid Render Loop (Progress + Visualizer)
 function render() {
-    // A. Update Progress Bar
     if (!audio.paused && !isDragging && audio.duration) {
         const percentage = (audio.currentTime / audio.duration) * 100;
         progressBar.style.width = percentage + '%';
     }
 
-    // B. Update Visualizer Bars (Logarithmic Logic)
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         
         for (let i = 0; i < BAR_COUNT; i++) {
-            // Logarithmic index: zooms into the active range (low-to-mid)
-            // This prevents the 'dead bars' on the right side.
-            const index = Math.floor(Math.pow(i / BAR_COUNT, 1.5) * (dataArray.length * 0.5));
+            // OPTIMIZED FOR BIRD CALLS:
+            // 1.1 exponent makes the distribution feel less "bunched up"
+            // 0.2 multiplier ignores the high-frequency silence above bird range
+            const index = Math.floor(Math.pow(i / BAR_COUNT, 1.1) * (dataArray.length * 0.2));
             const val = dataArray[index];
             
-            // Normalize to percentage (max height 100%)
-            const height = (val / 255) * 100; 
+            // Boost the height slightly (* 1.2) so the chirps look more energetic
+            const height = Math.min(100, (val / 255) * 100 * 1.2); 
 
             if (height > 2) {
                 barElements[i].style.height = height + '%';
@@ -86,13 +85,11 @@ function render() {
             }
         }
     } else if (analyser && audio.paused) {
-        // Hide bars when paused
         barElements.forEach(bar => {
             bar.style.height = '0';
             bar.style.opacity = "0";
         });
     }
-
     requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
