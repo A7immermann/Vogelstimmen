@@ -8,7 +8,7 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
-const POINT_COUNT = 120; // High density for detail
+const POINT_COUNT = 100; 
 const VIS_HEIGHT = 80;
 
 function createSVGPath() {
@@ -47,9 +47,9 @@ function initAudio() {
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    analyser.fftSize = 2048;
-    // Set to a neutral middle-ground for better "flow"
-    analyser.smoothingTimeConstant = 0.7; 
+    analyser.fftSize = 1024; // Smaller FFT = faster, sharper response
+    // Low smoothing (0.5) makes it "jitter" less but react to peaks instantly
+    analyser.smoothingTimeConstant = 0.5; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -74,37 +74,36 @@ function render() {
         const bufferLength = dataArray.length;
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Sampling logic: bird chirps are in the mid-highs
-            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.4));
+            // Sampling the bird's high-pitch range
+            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
             let val = dataArray[index];
             
-            // 1. SOFT NOISE GATE
-            // Instead of a hard cut, we use a "Soft Knee" approach
-            // We normalize the value and apply a curve that suppresses low noise 
-            // but lets the "texture" of the bird's voice through.
+            // 1. THE "CHILL" LOGIC:
+            // Convert to a 0-1 scale
             let norm = val / 255;
             
-            // 2. ADAPTIVE LOG-SCALING
-            // We use Math.pow(norm, 2.5) instead of 8. 
-            // This is "steep" but doesn't feel like a heavy brick.
-            let curve = Math.pow(norm, 2.5);
-            
-            // Boost the displacement so the small details aren't lost
-            const displacement = curve * (VIS_HEIGHT * 1.1);
+            // 2. THE THRESHOLD (Kill background noise)
+            // If the sound is less than 40% of max volume, it stays at 0.
+            let threshold = 0.4;
+            let activeVal = 0;
+            if (norm > threshold) {
+                // Re-map the range so it pops out from the baseline sharply
+                activeVal = (norm - threshold) / (1 - threshold);
+            }
+
+            // 3. LOUDNESS SCALING
+            // We use a modest power (1.5) so it feels snappy, not heavy.
+            const displacement = Math.pow(activeVal, 1.5) * (VIS_HEIGHT * 0.9);
             
             const x = i; 
-            const y = (VIS_HEIGHT - 1) - Math.min(displacement, VIS_HEIGHT - 5); 
+            const y = (VIS_HEIGHT - 1) - displacement; 
             points.push({ x, y });
         }
 
-        // 3. HYBRID SMOOTHING (The "Organic" Look)
-        // We go back to Quadratic curves but use a 1:1 midpoint 
-        // to keep the peaks looking sharp but the "shoulders" looking smooth.
+        // Draw with "Linear" lines to keep the peaks looking like steep needles
         let d = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 0; i < points.length - 1; i++) {
-            const xc = (points[i].x + points[i + 1].x) / 2;
-            const yc = (points[i].y + points[i + 1].y) / 2;
-            d += ` Q ${points[i].x} ${points[i].y}, ${xc} ${yc}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x} ${points[i].y}`;
         }
         visualPath.setAttribute("d", d);
 
