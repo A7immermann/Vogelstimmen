@@ -56,21 +56,6 @@ line-height: 1.6;
 }
 
 
-/* The Visualizer Area */
-
-.visualizer-container {
-
-width: 100%;
-
-height: 80px;
-
-margin-bottom: 10px;
-
-overflow: visible;
-
-}
-
-
 .custom-player {
 
 display: flex;
@@ -176,30 +161,26 @@ padding: 0;
 
 
 .visualizer-container {
-
-width: 100%;
-
-height: 80px;
-
-margin: 0; /* Remove bottom margin to keep it tight to the bar */
-
-display: block;
-
-overflow: hidden; /* Prevents stray SVG edges from causing scroll */
-
+    width: 100%;
+    height: 80px;
+    margin: 0;
+    display: block;
+    /* This acts as your clipping mask */
+    overflow: hidden; 
+    position: relative;
 }
 
-
 .visualizer-container svg {
-
-display: block;
-
-width: 100%;
-
-height: 100%;
-
-overflow: visible;
-
+    display: block;
+    /* Make it wider than the container to hide the jumping ends */
+    width: 104%; 
+    height: 100%;
+    /* Center it so 2% is cut off on the left and 2% on the right */
+    position: absolute;
+    left: -2%; 
+    overflow: visible;
+    /* Crucial: prevents the SVG from trying to stay 'square' */
+    preserveAspectRatio: none; 
 }
 
 
@@ -241,7 +222,7 @@ overflow: visible;
 
 </div>
 
-<p>test8d xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p>
+<p>test8e xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p>
 
 </div>
 
