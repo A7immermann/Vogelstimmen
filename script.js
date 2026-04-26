@@ -32,9 +32,9 @@ function createSVGPath() {
 }
 
 function drawRestState() {
-    // Fill the array with the "floor" value (VIS_HEIGHT - 1)
     currentY.fill(VIS_HEIGHT - 1);
-    visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
+    // Draw from -1 to POINT_COUNT + 1 to hide the rounded line-ends
+    visualPath.setAttribute("d", `M -1 ${VIS_HEIGHT - 1} L ${POINT_COUNT + 1} ${VIS_HEIGHT - 1}`);
 }
 
 createSVGPath();
@@ -74,8 +74,7 @@ function render() {
         const bufferLength = dataArray.length;
         let points = [];
 
-        for (let i = 0; i < POINT_COUNT; i++) {
-    // 1. Zoom into bird chirp frequencies (skipping dead bass)
+       for (let i = 0; i < POINT_COUNT; i++) {
     const startOffset = 4; 
     const baseIndex = startOffset + Math.floor((i / POINT_COUNT) * (bufferLength * 0.35));
     
@@ -92,16 +91,15 @@ function render() {
 
     const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
 
-    // Asymmetric Smoothing
     if (targetY < currentY[i]) {
         currentY[i] += (targetY - currentY[i]) * 0.8;
     } else {
         currentY[i] += (targetY - currentY[i]) * 0.15;
     }
 
-    // 2. FORCE THE X-COORDINATE
-    // This ensures point 0 is at 0 and point 79 is exactly at the right edge
-    let xPos = (i / (POINT_COUNT - 1)) * POINT_COUNT;
+    // NEW X CALCULATION: 
+    // We map 0-79 to -0.5 to 80.5 so the line-cap is hidden outside the box
+    let xPos = ((i / (POINT_COUNT - 1)) * (POINT_COUNT + 2)) - 1;
     points.push({ x: xPos, y: currentY[i] });
 }
         let d = `M ${points[0].x} ${points[0].y}`;

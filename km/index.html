@@ -95,16 +95,18 @@
         .visualizer-container {
     width: 100%;
     height: 80px;
-    margin: 0; /* Remove bottom margin to keep it tight to the bar */
+    margin: 0;
     display: block;
-    overflow: hidden; /* Prevents stray SVG edges from causing scroll */
+    overflow: hidden; /* Hide the 'overshoot' */
 }
 
 .visualizer-container svg {
     display: block;
     width: 100%;
     height: 100%;
-    overflow: visible; 
+    overflow: visible;
+    /* Force stretch behavior */
+    preserveAspectRatio: none; 
 }
 
     </style>
@@ -129,7 +131,7 @@
     
     <audio id="myAudio"></audio>
 </div>
-        <p>test8d xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p> 
+        <p>test8e xeno-canto.org (XC707385)<br>Sonothèque ADVL<br>Genêts, Manche, Normandie, France</p> 
     </div>
 </body>
 </html>
