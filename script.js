@@ -9,7 +9,7 @@ let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
 const POINT_COUNT = 80; 
-const VIS_HEIGHT = 100; // Internal 100-unit scale
+const VIS_HEIGHT = 100; 
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
 function createSVGPath() {
@@ -17,6 +17,9 @@ function createSVGPath() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", `0 0 ${POINT_COUNT} ${VIS_HEIGHT}`);
     svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.display = "block";
     
     visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     visualPath.setAttribute("fill", "none");
@@ -32,6 +35,7 @@ function createSVGPath() {
 
 function drawRestState() {
     currentY.fill(VIS_HEIGHT - 1);
+    // This ensures the line is drawn even when idle
     visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
 }
 
@@ -41,7 +45,6 @@ function initAudio() {
     if (audioContext) return;
     
     audio.crossOrigin = "anonymous";
-    // Cache buster for GitHub Pages
     audio.src = "../audio/km.mp3" + "?v=" + Date.now(); 
     audio.load();
 
@@ -50,7 +53,7 @@ function initAudio() {
     analyser = audioContext.createAnalyser();
     
     analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.3; // Low API smoothing to allow custom JS logic
+    analyser.smoothingTimeConstant = 0.3; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -71,35 +74,31 @@ playBtn.addEventListener('click', () => {
 });
 
 function render() {
-    // 1. Progress Bar Update
     if (!audio.paused && !isDragging && audio.duration) {
         progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
     }
 
-    // 2. Visualizer Logic
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         const bufferLength = dataArray.length;
         let points = [];
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Sampling mid-high frequencies (bird chirps)
             const baseIndex = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
             let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
             
             let norm = val / 255;
-            let threshold = 0.35; // Noise floor
+            let threshold = 0.35; 
             let targetDisplacement = 0;
 
             if (norm > threshold) {
                 let activeVal = (norm - threshold) / (1 - threshold);
-                activeVal = Math.sin(activeVal * Math.PI / 2); // Smooth base transition
+                activeVal = Math.sin(activeVal * Math.PI / 2); 
                 targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
             }
 
             const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
 
-            // ASYMMETRIC SMOOTHING: Snap up, drift down
             if (targetY < currentY[i]) {
                 currentY[i] += (targetY - currentY[i]) * 0.8; 
             } else {
@@ -109,7 +108,6 @@ function render() {
             points.push({ x: i, y: currentY[i] });
         }
 
-        // Draw Quadratic Bezier Path
         let d = `M ${points[0].x} ${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
@@ -127,7 +125,6 @@ function render() {
 
 requestAnimationFrame(render);
 
-// Dragging Logic
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
