@@ -12,9 +12,9 @@ const POINT_COUNT = 80;
 const VIS_HEIGHT = 100; 
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
-// Standardized icons with the variation selector
-const ICON_PLAY = '▶&#xFE0E;';
-const ICON_PAUSE = '⏸&#xFE0E;';
+// SVG Icons with rounded corners
+const ICON_PLAY = `<svg viewBox="0 0 24 24" width="20" height="20" fill="black" style="display:block;"><path d="M7 4v16l13-8z" stroke="black" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const ICON_PAUSE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="black" style="display:block;"><rect x="5" y="4" width="4" height="16" rx="1.5"/><rect x="15" y="4" width="4" height="16" rx="1.5"/></svg>`;
 
 function resetPlayerUI() {
     playBtn.innerHTML = ICON_PLAY;
@@ -40,7 +40,7 @@ function createSVGPath() {
 
 function drawRestState() {
     currentY.fill(VIS_HEIGHT - 1);
-    visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
+    if (visualPath) visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
 }
 
 createSVGPath();
@@ -128,7 +128,6 @@ const handleMove = (e) => {
     if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
 };
 
-// Unified Start Dragging
 const startDrag = (e) => {
     isDragging = true;
     wasPlayingBeforeDrag = !audio.paused;
@@ -136,7 +135,6 @@ const startDrag = (e) => {
     handleMove(e);
 };
 
-// Unified Stop Dragging
 const stopDrag = () => {
     if (!isDragging) return;
     isDragging = false;
@@ -150,7 +148,6 @@ const stopDrag = () => {
     }
 };
 
-// Event Listeners
 progressContainer.addEventListener('mousedown', startDrag);
 progressContainer.addEventListener('touchstart', (e) => {
     if (e.cancelable) e.preventDefault();
