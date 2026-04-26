@@ -91,6 +91,27 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
   padding: 0;
   
 }
+
+.visualizer-container {
+  display: flex;
+  align-items: flex-end; /* Bars grow upward */
+  justify-content: space-between;
+  width: 100%;
+  height: 60px; /* Adjust height as needed */
+  margin-bottom: 10px;
+  background-color: #fff5d6;
+  border-radius: 4px;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.vis-bar {
+  background-color: #000;
+  width: 2px; /* Very thin, elegant bars */
+  border-radius: 1px;
+  transition: height 0.05s ease; /* Smooth the vertical jumping */
+}
     </style>
     <script src="../script.js" defer></script>
 </head>
@@ -100,6 +121,8 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
     <span class="latin-name">Parus major</span>
 </div>
 <div class="info-box">
+  <div class="visualizer-container" id="visualizer">
+  </div>
   <div class="custom-player">
   <button id="playBtn">▶</button>
   <div class="progress-container">

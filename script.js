@@ -2,12 +2,46 @@ const audio = document.getElementById('myAudio');
 const playBtn = document.getElementById('playBtn');
 const progressBar = document.getElementById('progressBar');
 const progressContainer = document.querySelector('.progress-container');
+const visualizerContainer = document.getElementById('visualizer');
 
 let isDragging = false;
 let wasPlayingBeforeDrag = false;
+let audioContext, analyser, dataArray, barElements;
 
-// 1. Play/Pause Toggle
-playBtn.addEventListener('click', togglePlay);
+// 1. Setup Visualizer Bars
+const BAR_COUNT = 32;
+function createBars() {
+    for (let i = 0; i < BAR_COUNT; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'vis-bar';
+        visualizerContainer.appendChild(bar);
+    }
+    barElements = document.querySelectorAll('.vis-bar');
+}
+createBars();
+
+// 2. Initialize Web Audio (must be on user click)
+function initAudioContext() {
+    if (audioContext) return;
+    
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaElementSource(audio);
+    analyser = audioContext.createAnalyser();
+    
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
+    
+    analyser.fftSize = 64; // Smaller = fewer bars/lower resolution
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+}
+
+// 3. Play/Pause Toggle
+playBtn.addEventListener('click', () => {
+    initAudioContext(); // Initialize context on first click
+    if (audioContext.state === 'suspended') audioContext.resume();
+    togglePlay();
+});
 
 function togglePlay() {
     if (audio.paused) {
@@ -19,35 +53,39 @@ function togglePlay() {
     }
 }
 
-// 2. High-Framerate Render Loop (The "Liquid" Engine)
+// 4. Liquid Render Loop (Progress + Visualizer)
 function render() {
-    // This runs ~60 times per second
+    // A. Update Progress Bar
     if (!audio.paused && !isDragging && audio.duration) {
         const percentage = (audio.currentTime / audio.duration) * 100;
         progressBar.style.width = percentage + '%';
     }
+
+    // B. Update Visualizer Bars
+    if (analyser && !audio.paused) {
+        analyser.getByteFrequencyData(dataArray);
+        for (let i = 0; i < BAR_COUNT; i++) {
+            const val = dataArray[i];
+            const height = (val / 255) * 100; // Normalize to percentage
+            barElements[i].style.height = height + '%';
+        }
+    } else if (analyser && audio.paused) {
+        // Slowly drop bars to 0 when paused
+        barElements.forEach(bar => bar.style.height = '2px');
+    }
+
     requestAnimationFrame(render);
 }
-
-// Kick off the loop immediately
 requestAnimationFrame(render);
 
-// 3. Dragging Logic
+// 5. Dragging Logic (Keep your smooth dragging)
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = progressContainer.clientWidth;
-    
-    let percentage = (x / width) * 100;
-    percentage = Math.max(0, Math.min(percentage, 100));
-
-    // Update bar visually for instant feedback
+    let percentage = Math.max(0, Math.min((x / width) * 100, 100));
     progressBar.style.width = percentage + '%';
-    
-    // Update audio position
-    if (audio.duration) {
-        audio.currentTime = (percentage / 100) * audio.duration;
-    }
+    if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
 };
 
 progressContainer.addEventListener('mousedown', (e) => {
@@ -57,16 +95,10 @@ progressContainer.addEventListener('mousedown', (e) => {
     handleMove(e);
 });
 
-window.addEventListener('mousemove', (e) => {
-    if (isDragging) handleMove(e);
-});
-
+window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        if (wasPlayingBeforeDrag) {
-            audio.play();
-            playBtn.textContent = '⏸';
-        }
+        if (wasPlayingBeforeDrag) audio.play();
     }
 });
