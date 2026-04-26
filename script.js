@@ -12,6 +12,19 @@ const POINT_COUNT = 80;
 const VIS_HEIGHT = 100; 
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
+/**
+ * 1. UI Reset Logic
+ * Resets button, bar, and visualizer to original state
+ */
+function resetPlayerUI() {
+    playBtn.textContent = '▶';
+    progressBar.style.width = '0%';
+    drawRestState();
+}
+
+/**
+ * 2. Visualizer Setup
+ */
 function createSVGPath() {
     visualizerContainer.innerHTML = '';
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -37,36 +50,38 @@ function drawRestState() {
 
 createSVGPath();
 
+/**
+ * 3. Audio Context Initialization
+ */
 function initAudio() {
     if (audioContext) return;
 
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // 1. Create the source
         const source = audioContext.createMediaElementSource(audio);
         
-        // 2. Immediate Speaker Connection (Bypasses most 'not playing' bugs)
+        // Connect to speakers first (Safe Playback)
         source.connect(audioContext.destination);
 
-        // 3. Setup Analyser for visualizer
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 1024;
         analyser.smoothingTimeConstant = 0.3; 
         dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        // 4. Connect source to analyser
+        // Connect to analyser for visuals
         source.connect(analyser);
     } catch (e) {
-        console.error("AudioContext failed, falling back to standard playback:", e);
+        console.error("AudioContext initialization failed:", e);
     }
 }
 
+/**
+ * 4. Control Listeners
+ */
 playBtn.addEventListener('click', () => {
     initAudio();
     
-    // Resume context if it was suspended (browser policy)
-    if (audioContext.state === 'suspended') {
+    if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume();
     }
     
@@ -79,23 +94,22 @@ playBtn.addEventListener('click', () => {
     }
 });
 
-// Listen for when the audio finishes playing
-audio.addEventListener('ended', () => {
-    // 1. Reset the button icon
-    playBtn.textContent = '▶';
-    
-    // 2. Reset the progress bar width
-    progressBar.style.width = '0%';
-    
-    // 3. Clear the visualizer line (optional, but looks cleaner)
-    drawRestState();
-});
+// The specific fix for resetting when the audio ends
+audio.onended = () => {
+    resetPlayerUI();
+};
 
+/**
+ * 5. The Render Loop (Visuals & Progress)
+ */
 function render() {
+    // Update Progress Bar
     if (!audio.paused && !isDragging && audio.duration) {
-        progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
+        const progress = (audio.currentTime / audio.duration);
+        progressBar.style.width = (progress * 100) + '%';
     }
 
+    // Update Visualizer
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         const bufferLength = dataArray.length;
@@ -116,6 +130,7 @@ function render() {
                 targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
             }
 
+            // Pin edges to the floor
             if (i === 0 || i === POINT_COUNT - 1) targetDisplacement = 0;
 
             const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
@@ -146,13 +161,19 @@ function render() {
 
 requestAnimationFrame(render);
 
+/**
+ * 6. Dragging / Seeking Logic
+ */
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const width = progressContainer.clientWidth;
     let percentage = Math.max(0, Math.min((x / width) * 100, 100));
     progressBar.style.width = percentage + '%';
-    if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
+    
+    if (audio.duration) {
+        audio.currentTime = (percentage / 100) * audio.duration;
+    }
 };
 
 progressContainer.addEventListener('mousedown', (e) => {
@@ -162,13 +183,21 @@ progressContainer.addEventListener('mousedown', (e) => {
     handleMove(e);
 });
 
-window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
+window.addEventListener('mousemove', (e) => { 
+    if (isDragging) handleMove(e); 
+});
+
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        if (wasPlayingBeforeDrag) {
+        // If we dragged it to the very end, reset UI
+        if (audio.currentTime >= audio.duration) {
+            resetPlayerUI();
+        } else if (wasPlayingBeforeDrag) {
             audio.play();
             playBtn.textContent = '⏸';
+        } else {
+            playBtn.textContent = '▶';
         }
     }
 });
