@@ -55,8 +55,12 @@ function initAudio() {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
+    
     analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.3;
+    analyser.smoothingTimeConstant = 0.3; 
+    
+    // THIS LINE WAS MISSING:
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     source.connect(analyser);
     analyser.connect(audioContext.destination);
