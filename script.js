@@ -166,9 +166,19 @@ requestAnimationFrame(render);
  */
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    
+    // Support for both Mouse and Touch coordinates
+    let clientX;
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+    } else {
+        clientX = e.clientX;
+    }
+
+    const x = clientX - rect.left;
     const width = progressContainer.clientWidth;
     let percentage = Math.max(0, Math.min((x / width) * 100, 100));
+    
     progressBar.style.width = percentage + '%';
     
     if (audio.duration) {
@@ -176,6 +186,7 @@ const handleMove = (e) => {
     }
 };
 
+// --- Mouse Events ---
 progressContainer.addEventListener('mousedown', (e) => {
     isDragging = true;
     wasPlayingBeforeDrag = !audio.paused;
@@ -190,14 +201,44 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        // If we dragged it to the very end, reset UI
         if (audio.currentTime >= audio.duration) {
             resetPlayerUI();
         } else if (wasPlayingBeforeDrag) {
             audio.play();
-            playBtn.textContent = '⏸';
+            playBtn.innerHTML = ICON_PAUSE;
         } else {
-            playBtn.textContent = '▶';
+            playBtn.innerHTML = ICON_PLAY;
+        }
+    }
+});
+
+// --- Touch Events (Mobile) ---
+progressContainer.addEventListener('touchstart', (e) => {
+    // Prevent default to stop page scrolling
+    if (e.cancelable) e.preventDefault(); 
+    isDragging = true;
+    wasPlayingBeforeDrag = !audio.paused;
+    audio.pause();
+    handleMove(e);
+}, { passive: false }); // passive: false is required to use preventDefault
+
+window.addEventListener('touchmove', (e) => { 
+    if (isDragging) {
+        if (e.cancelable) e.preventDefault();
+        handleMove(e);
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', () => {
+    if (isDragging) {
+        isDragging = false;
+        if (audio.currentTime >= audio.duration) {
+            resetPlayerUI();
+        } else if (wasPlayingBeforeDrag) {
+            audio.play();
+            playBtn.innerHTML = ICON_PAUSE;
+        } else {
+            playBtn.innerHTML = ICON_PLAY;
         }
     }
 });
