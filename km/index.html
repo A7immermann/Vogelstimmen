@@ -107,10 +107,12 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
 }
 
 .vis-bar {
-  background-color: #000;
-  width: 2px; /* Very thin, elegant bars */
+  background-color: #000; /* Black bars */
+  width: 2px;
+  margin: 0 1px;
+  height: 2px; /* This ensures they aren't invisible when silent */
   border-radius: 1px;
-  transition: height 0.05s ease; /* Smooth the vertical jumping */
+  transition: height 0.05s ease; /*smooth jump
 }
     </style>
     <script src="../script.js" defer></script>
@@ -128,7 +130,7 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
   <div class="progress-container">
     <div id="progressBar"></div>
   </div>
-  <audio id="myAudio" src="../audio/km.mp3"></audio>
+  <audio id="myAudio" src="../audio/km.mp3" crossorigin="anonymous"></audio>
 </div>
    <p>xeno-canto.org (XC707385)<br>
     Sonothèque ADVL<br>
