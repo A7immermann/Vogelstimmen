@@ -8,9 +8,8 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
-const POINT_COUNT = 80; // Slightly fewer points makes for "wider", cleaner hills
+const POINT_COUNT = 80; 
 const VIS_HEIGHT = 80;
-// This array will store the "current" y-positions to allow for smooth lerping
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
 function createSVGPath() {
@@ -51,8 +50,8 @@ function initAudio() {
     analyser = audioContext.createAnalyser();
     
     analyser.fftSize = 1024;
-    // We let the JS lerp do the heavy lifting for smoothness
-    analyser.smoothingTimeConstant = 0.6; 
+    // Lowered smoothing in the Web Audio API to let the JS handle the logic
+    analyser.smoothingTimeConstant = 0.3; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -77,32 +76,33 @@ function render() {
         let points = [];
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // 1. Spatial Averaging (3-point window)
             const baseIndex = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
             let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
             
             let norm = val / 255;
-            let threshold = 0.38; // Clean floor
+            let threshold = 0.35; 
             let targetDisplacement = 0;
 
             if (norm > threshold) {
                 let activeVal = (norm - threshold) / (1 - threshold);
-                // Sine ease for the base of the "function" curve
                 activeVal = Math.sin(activeVal * Math.PI / 2);
-                targetDisplacement = Math.pow(activeVal, 1.3) * (VIS_HEIGHT * 0.8);
+                targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.85);
             }
 
             const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
 
-            // 2. TEMPORAL SMOOTHING (Lerp)
-            // This is the secret: we only move 20% toward the target every frame.
-            // This eliminates the "zigzag" jitter completely.
-            currentY[i] += (targetY - currentY[i]) * 0.2;
+            // --- ASYMMETRIC SMOOTHING ---
+            if (targetY < currentY[i]) {
+                // If moving UP (sound is starting): Snap nearly instantly
+                currentY[i] += (targetY - currentY[i]) * 0.8;
+            } else {
+                // If moving DOWN (sound is ending): Drift slowly for smoothness
+                currentY[i] += (targetY - currentY[i]) * 0.15;
+            }
 
             points.push({ x: i, y: currentY[i] });
         }
 
-        // 3. Path Generation (Quadratic Bézier)
         let d = `M ${points[0].x} ${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
