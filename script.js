@@ -8,7 +8,7 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
-const POINT_COUNT = 80; // More points for a sharper, detailed line
+const POINT_COUNT = 100; // More points for sharper peaks
 const VIS_HEIGHT = 80;
 
 function createSVGPath() {
@@ -24,23 +24,16 @@ function createSVGPath() {
     visualPath.setAttribute("stroke", "black");
     visualPath.setAttribute("vector-effect", "non-scaling-stroke");
     visualPath.setAttribute("stroke-width", "1");
-    
-    // Always visible
     visualPath.setAttribute("opacity", "1");
     
     svg.appendChild(visualPath);
     visualizerContainer.appendChild(svg);
-    
-    // Initialize the line at the bottom rest position
     drawRestState();
 }
 
 function drawRestState() {
-    let d = `M 0 ${VIS_HEIGHT - 1}`;
-    for (let i = 1; i < POINT_COUNT; i++) {
-        d += ` L ${i} ${VIS_HEIGHT - 1}`;
-    }
-    visualPath.setAttribute("d", d);
+    // A clean flat line at the bottom
+    visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
 }
 
 createSVGPath();
@@ -55,8 +48,10 @@ function initAudio() {
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.6; // Faster response for "loudness peaks"
+    // 2048 provides more granular frequency data
+    analyser.fftSize = 2048;
+    // Lower smoothing (0.4) makes the peaks react instantly (steeper)
+    analyser.smoothingTimeConstant = 0.4; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -81,58 +76,46 @@ function render() {
         const bufferLength = dataArray.length;
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Focus on bird frequency range (0 to 40% of spectrum)
-            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.4));
-            const val = dataArray[index];
+            // Sampling logic: looking at the specific bird-chirp range
+            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.35));
+            let val = dataArray[index];
             
-            // 1. Logarithmic base
-            let norm = val / 255; 
+            // 1. HARD THRESHOLD (The Noise Gate)
+            // Anything below 140 (out of 255) is treated as 0 to kill background noise
+            const threshold = 140;
+            if (val < threshold) {
+                val = 0;
+            } else {
+                // Re-scale the value to a 0-1 range after the threshold
+                val = (val - threshold) / (255 - threshold);
+            }
             
-            // 2. Exponential "Gate": Raising to a high power (like 4 or 5)
-            // This makes small/medium values nearly 0 and only high values pop.
-            let extremeLog = Math.pow(norm, 5); 
+            // 2. EXTREME POWER SCALING
+            // Raising to the 8th power ensures only the tip of the peak shows
+            let extremePeak = Math.pow(val, 8); 
             
-            const displacement = extremeLog * (VIS_HEIGHT * 0.9);
+            const displacement = extremePeak * (VIS_HEIGHT * 0.95);
             
             const x = i; 
             const y = (VIS_HEIGHT - 1) - displacement; 
             points.push({ x, y });
         }
 
+        // Connect points with a sharp "Linear" move to emphasize the peaks
+        // (Switched from Q to L for a more "scientific/stark" look)
         let d = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 0; i < points.length - 1; i++) {
-            const xc = (points[i].x + points[i + 1].x) / 2;
-            const yc = (points[i].y + points[i + 1].y) / 2;
-            d += ` Q ${points[i].x} ${points[i].y}, ${xc} ${yc}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x} ${points[i].y}`;
         }
         visualPath.setAttribute("d", d);
+
     } else if (audio.paused) {
-        // Line stays visible but flat when paused
         drawRestState();
     }
     requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
 
-// Dragging Logic (keeping existing functionality)
+// Dragging Logic
 const handleMove = (e) => {
-    const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = progressContainer.clientWidth;
-    let percentage = Math.max(0, Math.min((x / width) * 100, 100));
-    progressBar.style.width = percentage + '%';
-    if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
-};
-progressContainer.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    wasPlayingBeforeDrag = !audio.paused;
-    audio.pause();
-    handleMove(e);
-});
-window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
-window.addEventListener('mouseup', () => {
-    if (isDragging) {
-        isDragging = false;
-        if (wasPlayingBeforeDrag) audio.play();
-    }
-});
+    const rect =
