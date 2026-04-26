@@ -15,13 +15,14 @@ let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 function createSVGPath() {
     visualizerContainer.innerHTML = ''; 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    // viewBox width matches point count; height matches our 100-unit scale
     svg.setAttribute("viewBox", `0 0 ${POINT_COUNT} ${VIS_HEIGHT}`);
-    svg.setAttribute("preserveAspectRatio", "none");
+    // This MUST be here to allow the stretch
+    svg.setAttribute("preserveAspectRatio", "none"); 
     
     visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     visualPath.setAttribute("fill", "none");
     visualPath.setAttribute("stroke", "black");
+    // This keeps the line width consistent regardless of how much we stretch the SVG
     visualPath.setAttribute("vector-effect", "non-scaling-stroke");
     visualPath.setAttribute("stroke-width", "1");
     visualPath.setAttribute("stroke-linecap", "round");
