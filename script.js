@@ -8,7 +8,7 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
-const POINT_COUNT = 100; // More points for sharper peaks
+const POINT_COUNT = 120; // High density for detail
 const VIS_HEIGHT = 80;
 
 function createSVGPath() {
@@ -32,7 +32,6 @@ function createSVGPath() {
 }
 
 function drawRestState() {
-    // A clean flat line at the bottom
     visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
 }
 
@@ -48,10 +47,9 @@ function initAudio() {
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    // 2048 provides more granular frequency data
     analyser.fftSize = 2048;
-    // Lower smoothing (0.4) makes the peaks react instantly (steeper)
-    analyser.smoothingTimeConstant = 0.4; 
+    // Set to a neutral middle-ground for better "flow"
+    analyser.smoothingTimeConstant = 0.7; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -76,36 +74,37 @@ function render() {
         const bufferLength = dataArray.length;
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Sampling logic: looking at the specific bird-chirp range
-            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.35));
+            // Sampling logic: bird chirps are in the mid-highs
+            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.4));
             let val = dataArray[index];
             
-            // 1. HARD THRESHOLD (The Noise Gate)
-            // Anything below 140 (out of 255) is treated as 0 to kill background noise
-            const threshold = 140;
-            if (val < threshold) {
-                val = 0;
-            } else {
-                // Re-scale the value to a 0-1 range after the threshold
-                val = (val - threshold) / (255 - threshold);
-            }
+            // 1. SOFT NOISE GATE
+            // Instead of a hard cut, we use a "Soft Knee" approach
+            // We normalize the value and apply a curve that suppresses low noise 
+            // but lets the "texture" of the bird's voice through.
+            let norm = val / 255;
             
-            // 2. EXTREME POWER SCALING
-            // Raising to the 8th power ensures only the tip of the peak shows
-            let extremePeak = Math.pow(val, 8); 
+            // 2. ADAPTIVE LOG-SCALING
+            // We use Math.pow(norm, 2.5) instead of 8. 
+            // This is "steep" but doesn't feel like a heavy brick.
+            let curve = Math.pow(norm, 2.5);
             
-            const displacement = extremePeak * (VIS_HEIGHT * 0.95);
+            // Boost the displacement so the small details aren't lost
+            const displacement = curve * (VIS_HEIGHT * 1.1);
             
             const x = i; 
-            const y = (VIS_HEIGHT - 1) - displacement; 
+            const y = (VIS_HEIGHT - 1) - Math.min(displacement, VIS_HEIGHT - 5); 
             points.push({ x, y });
         }
 
-        // Connect points with a sharp "Linear" move to emphasize the peaks
-        // (Switched from Q to L for a more "scientific/stark" look)
+        // 3. HYBRID SMOOTHING (The "Organic" Look)
+        // We go back to Quadratic curves but use a 1:1 midpoint 
+        // to keep the peaks looking sharp but the "shoulders" looking smooth.
         let d = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 1; i < points.length; i++) {
-            d += ` L ${points[i].x} ${points[i].y}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const xc = (points[i].x + points[i + 1].x) / 2;
+            const yc = (points[i].y + points[i + 1].y) / 2;
+            d += ` Q ${points[i].x} ${points[i].y}, ${xc} ${yc}`;
         }
         visualPath.setAttribute("d", d);
 
@@ -118,4 +117,23 @@ requestAnimationFrame(render);
 
 // Dragging Logic
 const handleMove = (e) => {
-    const rect =
+    const rect = progressContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = progressContainer.clientWidth;
+    let percentage = Math.max(0, Math.min((x / width) * 100, 100));
+    progressBar.style.width = percentage + '%';
+    if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
+};
+progressContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    wasPlayingBeforeDrag = !audio.paused;
+    audio.pause();
+    handleMove(e);
+});
+window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
+window.addEventListener('mouseup', () => {
+    if (isDragging) {
+        isDragging = false;
+        if (wasPlayingBeforeDrag) audio.play();
+    }
+});
