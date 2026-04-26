@@ -11,6 +11,8 @@ let audioContext, analyser, dataArray, barElements;
 // 1. Setup Visualizer Bars
 const BAR_COUNT = 32;
 function createBars() {
+    // Clear container to prevent duplicates
+    visualizerContainer.innerHTML = ''; 
     for (let i = 0; i < BAR_COUNT; i++) {
         const bar = document.createElement('div');
         bar.className = 'vis-bar';
@@ -20,7 +22,7 @@ function createBars() {
 }
 createBars();
 
-// 2. Initialize Web Audio (must be on user click)
+// 2. Initialize Web Audio (Handled on first user interaction)
 function initAudioContext() {
     if (audioContext) return;
     
@@ -31,9 +33,10 @@ function initAudioContext() {
     source.connect(analyser);
     analyser.connect(audioContext.destination);
     
-    // 512 gives us more data points to sample from for better frequency distribution
+    // 512 provides high resolution for the sampling math below
     analyser.fftSize = 512; 
-    analyser.smoothingTimeConstant = 0.75; // Smoother transitions between bar heights
+    // Smooths out the vertical jittering
+    analyser.smoothingTimeConstant = 0.8; 
     
     const bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
@@ -56,76 +59,28 @@ function togglePlay() {
     }
 }
 
-// 4. Liquid Render Loop (Progress + Visualizer)
+// 4. Liquid Render Loop (Progress + Logarithmic Visualizer)
 function render() {
+    // A. Update Progress Bar
     if (!audio.paused && !isDragging && audio.duration) {
         const percentage = (audio.currentTime / audio.duration) * 100;
         progressBar.style.width = percentage + '%';
     }
 
+    // B. Update Visualizer Bars
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         
         for (let i = 0; i < BAR_COUNT; i++) {
-            // OPTIMIZED FOR BIRD CALLS:
-            // 1.1 exponent makes the distribution feel less "bunched up"
-            // 0.2 multiplier ignores the high-frequency silence above bird range
+            // LOG FREQUENCY: Zoom into the bird-song range (lower 20% of spectrum)
             const index = Math.floor(Math.pow(i / BAR_COUNT, 1.1) * (dataArray.length * 0.2));
             const val = dataArray[index];
             
-            // Boost the height slightly (* 1.2) so the chirps look more energetic
-            const height = Math.min(100, (val / 255) * 100 * 1.2); 
-
-            if (height > 2) {
-                barElements[i].style.height = height + '%';
-                barElements[i].style.opacity = "1";
-            } else {
-                barElements[i].style.height = "0";
-                barElements[i].style.opacity = "0";
+            // LOG LOUDNESS: Calculate height using logarithmic scaling for dB-like feel
+            let logHeight = 0;
+            if (val > 0) {
+                // Natural volume curve: rises fast at low levels, tapers at high levels
+                logHeight = Math.log10(val + 1) / Math.log10(256);
             }
-        }
-    } else if (analyser && audio.paused) {
-        barElements.forEach(bar => {
-            bar.style.height = '0';
-            bar.style.opacity = "0";
-        });
-    }
-    requestAnimationFrame(render);
-}
-requestAnimationFrame(render);
 
-// 5. Dragging Logic
-const handleMove = (e) => {
-    const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = progressContainer.clientWidth;
-    let percentage = Math.max(0, Math.min((x / width) * 100, 100));
-    
-    // Update visuals instantly for responsiveness
-    progressBar.style.width = percentage + '%';
-    
-    if (audio.duration) {
-        audio.currentTime = (percentage / 100) * audio.duration;
-    }
-};
-
-progressContainer.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    wasPlayingBeforeDrag = !audio.paused;
-    audio.pause();
-    handleMove(e);
-});
-
-window.addEventListener('mousemove', (e) => { 
-    if (isDragging) handleMove(e); 
-});
-
-window.addEventListener('mouseup', () => {
-    if (isDragging) {
-        isDragging = false;
-        if (wasPlayingBeforeDrag) {
-            audio.play();
-            playBtn.textContent = '⏸';
-        }
-    }
-});
+            // Apply a 1.25x boost to ensure
