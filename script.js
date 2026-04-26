@@ -39,13 +39,19 @@ createSVGPath();
 // 2. Initialize Web Audio
 function initAudioContext() {
     if (audioContext) return;
+    
+    // This line is the magic fix for GitHub Pages silence:
+    audio.crossOrigin = "anonymous"; 
+    
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
+    
     source.connect(analyser);
     analyser.connect(audioContext.destination);
+    
     analyser.fftSize = 512; 
-    analyser.smoothingTimeConstant = 0.85; // Slightly higher for smoother curves
+    analyser.smoothingTimeConstant = 0.85;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 }
 
