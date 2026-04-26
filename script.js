@@ -14,7 +14,7 @@ let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
 // SVG Icons with rounded corners
 const ICON_PLAY = `<svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;"><path d="M5 5v14l15-7z" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
-const ICON_PAUSE = `<svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;"><rect x="5" y="5" width="4" height="14" rx="1.5"/><rect x="15" y="5" width="4" height="14" rx="1.5"/></svg>`;
+const ICON_PAUSE = `<svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;"><rect x="5" y="5" width="4" height="14" rx="1.5" stroke="black" stroke-width="1.5"/><rect x="15" y="5" width="4" height="14" rx="1.5" stroke="black" stroke-width="1.5"/></svg>`;
 
 function resetPlayerUI() {
     playBtn.innerHTML = ICON_PLAY;
