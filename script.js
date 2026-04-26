@@ -31,14 +31,17 @@ function initAudioContext() {
     source.connect(analyser);
     analyser.connect(audioContext.destination);
     
-    analyser.fftSize = 64; // Smaller = fewer bars/lower resolution
+    // 512 gives us more data points to sample from for better frequency distribution
+    analyser.fftSize = 512; 
+    analyser.smoothingTimeConstant = 0.75; // Smoother transitions between bar heights
+    
     const bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
 }
 
 // 3. Play/Pause Toggle
 playBtn.addEventListener('click', () => {
-    initAudioContext(); // Initialize context on first click
+    initAudioContext(); 
     if (audioContext.state === 'suspended') audioContext.resume();
     togglePlay();
 });
@@ -61,31 +64,52 @@ function render() {
         progressBar.style.width = percentage + '%';
     }
 
-    // B. Update Visualizer Bars
+    // B. Update Visualizer Bars (Logarithmic Logic)
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
+        
         for (let i = 0; i < BAR_COUNT; i++) {
-            const val = dataArray[i];
-            const height = (val / 255) * 100; // Normalize to percentage
-            barElements[i].style.height = height + '%';
+            // Logarithmic index: zooms into the active range (low-to-mid)
+            // This prevents the 'dead bars' on the right side.
+            const index = Math.floor(Math.pow(i / BAR_COUNT, 1.5) * (dataArray.length * 0.5));
+            const val = dataArray[index];
+            
+            // Normalize to percentage (max height 100%)
+            const height = (val / 255) * 100; 
+
+            if (height > 2) {
+                barElements[i].style.height = height + '%';
+                barElements[i].style.opacity = "1";
+            } else {
+                barElements[i].style.height = "0";
+                barElements[i].style.opacity = "0";
+            }
         }
     } else if (analyser && audio.paused) {
-        // Slowly drop bars to 0 when paused
-        barElements.forEach(bar => bar.style.height = '2px');
+        // Hide bars when paused
+        barElements.forEach(bar => {
+            bar.style.height = '0';
+            bar.style.opacity = "0";
+        });
     }
 
     requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
 
-// 5. Dragging Logic (Keep your smooth dragging)
+// 5. Dragging Logic
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = progressContainer.clientWidth;
     let percentage = Math.max(0, Math.min((x / width) * 100, 100));
+    
+    // Update visuals instantly for responsiveness
     progressBar.style.width = percentage + '%';
-    if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
+    
+    if (audio.duration) {
+        audio.currentTime = (percentage / 100) * audio.duration;
+    }
 };
 
 progressContainer.addEventListener('mousedown', (e) => {
@@ -95,10 +119,16 @@ progressContainer.addEventListener('mousedown', (e) => {
     handleMove(e);
 });
 
-window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
+window.addEventListener('mousemove', (e) => { 
+    if (isDragging) handleMove(e); 
+});
+
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        if (wasPlayingBeforeDrag) audio.play();
+        if (wasPlayingBeforeDrag) {
+            audio.play();
+            playBtn.textContent = '⏸';
+        }
     }
 });

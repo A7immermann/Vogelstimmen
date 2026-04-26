@@ -90,29 +90,25 @@ body { margin: 0; padding: 0; background-color: #ffffff; }
   justify-content: flex-start;
   padding: 0;
   
-}
-
 .visualizer-container {
   display: flex;
-  align-items: flex-end; /* Bars grow upward */
-  justify-content: space-between;
+  align-items: flex-end;
+  justify-content: center; /* Center the bars */
   width: 100%;
-  height: 60px; /* Adjust height as needed */
-  margin-bottom: 10px;
-  background-color: #fff5d6;
-  border-radius: 4px;
-  padding: 5px;
-  box-sizing: border-box;
-  overflow: hidden;
+  height: 80px;
+  margin-bottom: 15px;
+  background-color: transparent; /* Container is now clear */
+  gap: 3px; /* Space between bars */
 }
 
 .vis-bar {
-  background-color: #000; /* Black bars */
-  width: 2px;
-  margin: 0 1px;
-  height: 2px; /* This ensures they aren't invisible when silent */
-  border-radius: 1px;
-  transition: height 0.05s ease; /*smooth jump
+  background-color: #fff5d6; /* Light yellow fill */
+  border: 0.5px solid #000;  /* 0.5px black border */
+  width: 3.5px;             /* Specific width requested */
+  height: 0;                /* Invisible at start */
+  border-radius: 2px 2px 0 0;
+  transition: height 0.08s ease; /* Smooth motion */
+  box-sizing: border-box;    /* Ensures border stays inside the 3.5px */
 }
     </style>
     <script src="../script.js" defer></script>
