@@ -21,16 +21,23 @@ function togglePlay() {
     }
 }
 
-// 2. Update bar during normal playback
-audio.addEventListener('timeupdate', () => {
-    if (!isDragging && audio.duration) {
+// 2. Smooth Animation Loop
+function smoothUpdate() {
+    if (!isDragging && !audio.paused) {
         updateProgressUI();
     }
-});
+    // Keep the loop running
+    requestAnimationFrame(smoothUpdate);
+}
+
+// Start the loop
+requestAnimationFrame(smoothUpdate);
 
 function updateProgressUI() {
-    const percentage = (audio.currentTime / audio.duration) * 100;
-    progressBar.style.width = percentage + '%';
+    if (audio.duration) {
+        const percentage = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = percentage + '%';
+    }
 }
 
 // 3. Dragging Logic
