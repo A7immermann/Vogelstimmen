@@ -6,12 +6,12 @@ const visualizerContainer = document.getElementById('visualizer');
 
 let isDragging = false;
 let wasPlayingBeforeDrag = false;
-let audioContext, analyser, dataArray;
-let visualPath; // The SVG path element
+let audioContext, analyser, dataArray, visualPath;
 
-// 1. Setup SVG Visualizer (Single Path)
 const POINT_COUNT = 32; 
 const VIS_HEIGHT = 80;
+
+// 1. Create the SVG Line Path
 function createSVGPath() {
     visualizerContainer.innerHTML = ''; 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -23,12 +23,8 @@ function createSVGPath() {
     visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     visualPath.setAttribute("fill", "none");
     visualPath.setAttribute("stroke", "black");
-    visualPath.setAttribute("stroke-width", "0.5");
-    visualPath.setAttribute("stroke-linecap", "round");
-    visualPath.setAttribute("stroke-linejoin", "round");
+    visualPath.setAttribute("stroke-width", "0.6");
     visualPath.setAttribute("opacity", "0");
-    
-    // Smooth transition for the path movement
     visualPath.style.transition = "opacity 0.3s ease";
     
     svg.appendChild(visualPath);
@@ -36,33 +32,31 @@ function createSVGPath() {
 }
 createSVGPath();
 
-// 2. Initialize Web Audio
-function initAudioContext() {
+// 2. Initialize Audio (With CORS fix)
+function initAudio() {
     if (audioContext) return;
     
-    // This line is the magic fix for GitHub Pages silence:
-    audio.crossOrigin = "anonymous"; 
+    audio.crossOrigin = "anonymous";
+    audio.src = "../audio/km.mp3"; // Adjust path if needed
     
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.85;
+    
     source.connect(analyser);
     analyser.connect(audioContext.destination);
     
-    analyser.fftSize = 512; 
-    analyser.smoothingTimeConstant = 0.85;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 }
 
-// 3. Play/Pause Toggle
+// 3. Play/Pause
 playBtn.addEventListener('click', () => {
-    initAudioContext(); 
+    initAudio();
     if (audioContext.state === 'suspended') audioContext.resume();
-    togglePlay();
-});
-
-function togglePlay() {
+    
     if (audio.paused) {
         audio.play();
         playBtn.textContent = '⏸';
@@ -70,32 +64,34 @@ function togglePlay() {
         audio.pause();
         playBtn.textContent = '▶';
     }
-}
+});
 
-// 4. Render Loop (Curve Generation)
+// 4. The Render Loop
 function render() {
+    // Progress Bar
     if (!audio.paused && !isDragging && audio.duration) {
         progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
     }
 
+    // Visualizer Curve
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         visualPath.setAttribute("opacity", "1");
 
         let points = [];
         for (let i = 0; i < POINT_COUNT; i++) {
+            // Bird Frequency logic (focused on low-mid)
             const index = Math.floor(Math.pow(i / POINT_COUNT, 1.1) * (dataArray.length * 0.2));
             const val = dataArray[index];
             
-            let logFactor = val > 0 ? Math.log10(val + 1) / Math.log10(256) : 0;
-            const displacement = logFactor * (VIS_HEIGHT * 0.8); // Scale for impact
+            // Logarithmic Loudness
+            let logHeight = val > 0 ? Math.log10(val + 1) / Math.log10(256) : 0;
+            const displacement = logHeight * (VIS_HEIGHT * 0.85);
             
-            const x = i * 2;
-            const y = (VIS_HEIGHT - 5) - displacement; // Baseline near bottom
-            points.push({x, y});
+            points.push({ x: i * 2, y: (VIS_HEIGHT - 2) - displacement });
         }
 
-        // Generate the SVG Path string (using Quadratic Curves for smoothness)
+        // Connect points with a smooth Quadratic Curve string
         let d = `M ${points[0].x} ${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
@@ -103,7 +99,6 @@ function render() {
             d += ` Q ${points[i].x} ${points[i].y}, ${xc} ${yc}`;
         }
         visualPath.setAttribute("d", d);
-
     } else if (audio.paused) {
         visualPath.setAttribute("opacity", "0");
     }
@@ -112,7 +107,7 @@ function render() {
 }
 requestAnimationFrame(render);
 
-// 5. Dragging Logic
+// 5. Dragging
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -121,12 +116,14 @@ const handleMove = (e) => {
     progressBar.style.width = percentage + '%';
     if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
 };
+
 progressContainer.addEventListener('mousedown', (e) => {
     isDragging = true;
     wasPlayingBeforeDrag = !audio.paused;
     audio.pause();
     handleMove(e);
 });
+
 window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
 window.addEventListener('mouseup', () => {
     if (isDragging) {
