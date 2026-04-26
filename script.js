@@ -8,51 +8,55 @@ let isDragging = false;
 let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
-const POINT_COUNT = 64; // Increased for a smoother line
+const POINT_COUNT = 80; // More points for a sharper, detailed line
 const VIS_HEIGHT = 80;
 
 function createSVGPath() {
     visualizerContainer.innerHTML = ''; 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    
-    // We set the viewBox width to POINT_COUNT to make math 1:1
     svg.setAttribute("viewBox", `0 0 ${POINT_COUNT} ${VIS_HEIGHT}`);
     svg.setAttribute("width", "100%");
     svg.setAttribute("height", "100%");
-    
-    // "none" allows the line to stretch to the container width exactly
     svg.setAttribute("preserveAspectRatio", "none");
     
     visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     visualPath.setAttribute("fill", "none");
     visualPath.setAttribute("stroke", "black");
-    
-    // Use vector-effect to keep the 1px thickness consistent regardless of scaling
     visualPath.setAttribute("vector-effect", "non-scaling-stroke");
     visualPath.setAttribute("stroke-width", "1");
     
-    visualPath.setAttribute("opacity", "0");
-    visualPath.style.transition = "opacity 0.3s ease";
+    // Always visible
+    visualPath.setAttribute("opacity", "1");
     
     svg.appendChild(visualPath);
     visualizerContainer.appendChild(svg);
+    
+    // Initialize the line at the bottom rest position
+    drawRestState();
 }
+
+function drawRestState() {
+    let d = `M 0 ${VIS_HEIGHT - 1}`;
+    for (let i = 1; i < POINT_COUNT; i++) {
+        d += ` L ${i} ${VIS_HEIGHT - 1}`;
+    }
+    visualPath.setAttribute("d", d);
+}
+
 createSVGPath();
 
 function initAudio() {
     if (audioContext) return;
     audio.crossOrigin = "anonymous";
-    const cacheBuster = "?v=" + Date.now();
-    audio.src = "../audio/km.mp3" + cacheBuster; 
+    audio.src = "../audio/km.mp3" + "?v=" + Date.now(); 
     audio.load();
 
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    // Higher FFT for better high-frequency detail
     analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.75; // Less smoothing = more "wiggle"
+    analyser.smoothingTimeConstant = 0.6; // Faster response for "loudness peaks"
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -72,25 +76,25 @@ function render() {
 
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
-        visualPath.setAttribute("opacity", "1");
 
         let points = [];
         const bufferLength = dataArray.length;
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Updated Distribution: i / POINT_COUNT covers the whole range.
-            // Bird songs are high, so we look at the first 40% of the buffer (0.4)
-            // Lowered the exponent (1.0) to keep it more linear/wide.
+            // Focus on bird frequency range (0 to 40% of spectrum)
             const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.4));
             const val = dataArray[index];
             
-            let logHeight = val > 0 ? Math.log10(val + 1) / Math.log10(256) : 0;
+            // 1. Logarithmic base
+            let norm = val / 255; 
             
-            // To stop the "jump," we use a lower multiplier
-            const displacement = logHeight * (VIS_HEIGHT * 0.7);
+            // 2. Exponential "Gate": Raising to a high power (like 4 or 5)
+            // This makes small/medium values nearly 0 and only high values pop.
+            let extremeLog = Math.pow(norm, 5); 
+            
+            const displacement = extremeLog * (VIS_HEIGHT * 0.9);
             
             const x = i; 
-            // Baseline is now at the very bottom (VIS_HEIGHT - 1)
             const y = (VIS_HEIGHT - 1) - displacement; 
             points.push({ x, y });
         }
@@ -103,13 +107,14 @@ function render() {
         }
         visualPath.setAttribute("d", d);
     } else if (audio.paused) {
-        visualPath.setAttribute("opacity", "0");
+        // Line stays visible but flat when paused
+        drawRestState();
     }
     requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
 
-// Dragging Logic
+// Dragging Logic (keeping existing functionality)
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
