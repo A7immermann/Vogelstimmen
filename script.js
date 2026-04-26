@@ -12,7 +12,6 @@ const POINT_COUNT = 80;
 const VIS_HEIGHT = 100; 
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
-// 1. Create the SVG Structure
 function createSVGPath() {
     visualizerContainer.innerHTML = '';
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -24,14 +23,13 @@ function createSVGPath() {
     visualPath.setAttribute("stroke", "black");
     visualPath.setAttribute("vector-effect", "non-scaling-stroke");
     visualPath.setAttribute("stroke-width", "1");
-    visualPath.setAttribute("stroke-linecap", "butt"); // Prevents jittery ends
+    visualPath.setAttribute("stroke-linecap", "butt"); 
 
     svg.appendChild(visualPath);
     visualizerContainer.appendChild(svg);
     drawRestState();
 }
 
-// 2. Draw the flat line
 function drawRestState() {
     currentY.fill(VIS_HEIGHT - 1);
     visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
@@ -39,11 +37,13 @@ function drawRestState() {
 
 createSVGPath();
 
-// 3. Initialize Audio (Universal Version)
 function initAudio() {
     if (audioContext) return;
 
+    // Standard Audio Context setup
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create nodes
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
@@ -51,17 +51,21 @@ function initAudio() {
     analyser.smoothingTimeConstant = 0.3; 
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
+    // CRITICAL: Connect the chain to the speakers (destination)
     source.connect(analyser);
     analyser.connect(audioContext.destination);
 }
 
-// 4. Play/Pause Toggle
 playBtn.addEventListener('click', () => {
     initAudio();
-    if (audioContext.state === 'suspended') audioContext.resume();
+    
+    // Resume context if it was suspended (browser policy)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     
     if (audio.paused) {
-        audio.play();
+        audio.play().catch(e => console.error("Playback failed:", e));
         playBtn.textContent = '⏸';
     } else {
         audio.pause();
@@ -69,14 +73,11 @@ playBtn.addEventListener('click', () => {
     }
 });
 
-// 5. The Animation Loop (The "Missing" Function)
 function render() {
-    // Progress Bar Update
     if (!audio.paused && !isDragging && audio.duration) {
         progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
     }
 
-    // Visualizer Update
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         const bufferLength = dataArray.length;
@@ -97,7 +98,6 @@ function render() {
                 targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
             }
 
-            // Pin the ends to zero to prevent the 5mm jump
             if (i === 0 || i === POINT_COUNT - 1) targetDisplacement = 0;
 
             const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
@@ -128,10 +128,9 @@ function render() {
 
 requestAnimationFrame(render);
 
-// 6. Progress Bar Dragging Logic
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const width = progressContainer.clientWidth;
     let percentage = Math.max(0, Math.min((x / width) * 100, 100));
     progressBar.style.width = percentage + '%';
