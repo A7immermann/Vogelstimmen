@@ -79,6 +79,18 @@ playBtn.addEventListener('click', () => {
     }
 });
 
+// Listen for when the audio finishes playing
+audio.addEventListener('ended', () => {
+    // 1. Reset the button icon
+    playBtn.textContent = '▶';
+    
+    // 2. Reset the progress bar width
+    progressBar.style.width = '0%';
+    
+    // 3. Clear the visualizer line (optional, but looks cleaner)
+    drawRestState();
+});
+
 function render() {
     if (!audio.paused && !isDragging && audio.duration) {
         progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
