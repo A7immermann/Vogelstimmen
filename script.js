@@ -24,6 +24,7 @@ function createSVGPath() {
     visualPath.setAttribute("stroke", "black");
     visualPath.setAttribute("vector-effect", "non-scaling-stroke");
     visualPath.setAttribute("stroke-width", "1");
+    visualPath.setAttribute("stroke-linecap", "round"); // Softer line ends
     visualPath.setAttribute("opacity", "1");
     
     svg.appendChild(visualPath);
@@ -47,9 +48,9 @@ function initAudio() {
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    analyser.fftSize = 1024; // Smaller FFT = faster, sharper response
-    // Low smoothing (0.5) makes it "jitter" less but react to peaks instantly
-    analyser.smoothingTimeConstant = 0.5; 
+    analyser.fftSize = 1024;
+    // High smoothing helps the overall "form" of the peaks stay stable
+    analyser.smoothingTimeConstant = 0.85; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -74,36 +75,39 @@ function render() {
         const bufferLength = dataArray.length;
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Sampling the bird's high-pitch range
-            const index = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
-            let val = dataArray[index];
+            // 1. DATA SMOOTHING (Moving Average)
+            // Instead of one index, we average 3 neighboring indices to kill tiny jitters
+            const baseIndex = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
+            let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
             
-            // 1. THE "CHILL" LOGIC:
-            // Convert to a 0-1 scale
             let norm = val / 255;
             
-            // 2. THE THRESHOLD (Kill background noise)
-            // If the sound is less than 40% of max volume, it stays at 0.
-            let threshold = 0.4;
+            // 2. SMOOTH NOISE GATE (Sine-based transition)
+            // Anything below 0.35 volume is zeroed out.
+            // Anything above fades in smoothly rather than popping.
+            let threshold = 0.35;
             let activeVal = 0;
             if (norm > threshold) {
-                // Re-map the range so it pops out from the baseline sharply
                 activeVal = (norm - threshold) / (1 - threshold);
+                // Apply a sine curve to the base of the peak for a smooth "fade-in"
+                activeVal = Math.sin(activeVal * Math.PI / 2);
             }
 
-            // 3. LOUDNESS SCALING
-            // We use a modest power (1.5) so it feels snappy, not heavy.
-            const displacement = Math.pow(activeVal, 1.5) * (VIS_HEIGHT * 0.9);
+            // Apply a slight power to keep the peak shape elegant
+            const displacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.85);
             
             const x = i; 
             const y = (VIS_HEIGHT - 1) - displacement; 
             points.push({ x, y });
         }
 
-        // Draw with "Linear" lines to keep the peaks looking like steep needles
+        // 3. CUBIC INTERPOLATION
+        // Using Quadratic Bézier curves (Q) to make the line look like a silk thread
         let d = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 1; i < points.length; i++) {
-            d += ` L ${points[i].x} ${points[i].y}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const xc = (points[i].x + points[i + 1].x) / 2;
+            const yc = (points[i].y + points[i + 1].y) / 2;
+            d += ` Q ${points[i].x} ${points[i].y}, ${xc} ${yc}`;
         }
         visualPath.setAttribute("d", d);
 
