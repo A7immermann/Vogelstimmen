@@ -36,19 +36,23 @@ createSVGPath();
 function initAudio() {
     if (audioContext) return;
     
-    audio.crossOrigin = "anonymous";
-    audio.src = "../audio/km.mp3"; // Adjust path if needed
+    // 1. Setup security BEFORE loading
+    audio.crossOrigin = "anonymous"; 
+    
+    // 2. CACHE BUSTER: Add a timestamp to the URL
+    // This prevents the browser from using a "non-CORS" cached version
+    const cacheBuster = "?t=" + new Date().getTime();
+    audio.src = "../audio/km.mp3" + cacheBuster; 
     
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioContext.createMediaElementSource(audio);
     analyser = audioContext.createAnalyser();
     
-    analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.85;
-    
     source.connect(analyser);
     analyser.connect(audioContext.destination);
     
+    analyser.fftSize = 512; 
+    analyser.smoothingTimeConstant = 0.85;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 }
 
