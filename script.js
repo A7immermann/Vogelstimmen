@@ -40,20 +40,23 @@ createSVGPath();
 function initAudio() {
     if (audioContext) return;
 
-    // Standard Audio Context setup
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
-    // Create nodes
+    // 1. Create the source from the <audio> tag
     const source = audioContext.createMediaElementSource(audio);
-    analyser = audioContext.createAnalyser();
     
+    // 2. Setup the Analyser for the visualizer
+    analyser = audioContext.createAnalyser();
     analyser.fftSize = 1024;
     analyser.smoothingTimeConstant = 0.3; 
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-    // CRITICAL: Connect the chain to the speakers (destination)
+    // 3. THE FIX: Connect source to speakers DIRECTLY
+    // This ensures that even if the visualizer fails, you still hear sound.
+    source.connect(audioContext.destination);
+
+    // 4. Connect source to analyser separately
     source.connect(analyser);
-    analyser.connect(audioContext.destination);
 }
 
 playBtn.addEventListener('click', () => {
