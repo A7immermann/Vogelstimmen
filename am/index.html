@@ -133,14 +133,12 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
     background: none;
     border: none;
     padding: 0;
-    width: 28px;   /* Fixed size ensures the layout doesn't move */
+    width: 28px;  
     height: 28px; 
     display: flex;
-    align-items: center; /* Vertically centers the SVG */
-    justify-content: flex-start; /* Keeps it aligned with the track */
+    align-items: center; 
+    justify-content: flex-start; 
     cursor: pointer;
-    
-    /* Crucial mobile/UI fixes from your version */
     -webkit-tap-highlight-color: transparent; 
     -webkit-user-select: none;
     user-select: none;
@@ -190,7 +188,11 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
 
 <div class="custom-player">
 
-<button id="playBtn">▶&#xFE0E;</button>
+<button id="playBtn">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;">
+        <path d="M5 5v14l15-7z" stroke="black" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+</button>
 
 <div class="player-track-area">
 
@@ -208,7 +210,7 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
 
 </div>
 
-<p>bla5 xeno-canto.org (XC670887)<br>Z. D.<br>Burley, Hampshire, England, United Kingdom</p>
+<p>bla6 xeno-canto.org (XC670887)<br>Z. D.<br>Burley, Hampshire, England, United Kingdom</p>
 
 </div>
 
