@@ -9,12 +9,13 @@ let wasPlayingBeforeDrag = false;
 let audioContext, analyser, dataArray, visualPath;
 
 const POINT_COUNT = 80; 
-const VIS_HEIGHT = 100; // Internal 100-unit scale
+const VIS_HEIGHT = 100; // Using a 100-unit internal scale for height percentage
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
 function createSVGPath() {
     visualizerContainer.innerHTML = ''; 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    // viewBox width matches point count; height matches our 100-unit scale
     svg.setAttribute("viewBox", `0 0 ${POINT_COUNT} ${VIS_HEIGHT}`);
     svg.setAttribute("preserveAspectRatio", "none");
     
@@ -31,6 +32,7 @@ function createSVGPath() {
 }
 
 function drawRestState() {
+    // Fill the array with the "floor" value (VIS_HEIGHT - 1)
     currentY.fill(VIS_HEIGHT - 1);
     visualPath.setAttribute("d", `M 0 ${VIS_HEIGHT - 1} L ${POINT_COUNT} ${VIS_HEIGHT - 1}`);
 }
@@ -39,9 +41,7 @@ createSVGPath();
 
 function initAudio() {
     if (audioContext) return;
-    
     audio.crossOrigin = "anonymous";
-    // Cache buster for GitHub Pages
     audio.src = "../audio/km.mp3" + "?v=" + Date.now(); 
     audio.load();
 
@@ -50,7 +50,7 @@ function initAudio() {
     analyser = audioContext.createAnalyser();
     
     analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.3; // Low API smoothing to allow custom JS logic
+    analyser.smoothingTimeConstant = 0.3; 
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -60,48 +60,40 @@ function initAudio() {
 playBtn.addEventListener('click', () => {
     initAudio();
     if (audioContext.state === 'suspended') audioContext.resume();
-    
-    if (audio.paused) {
-        audio.play();
-        playBtn.textContent = '⏸';
-    } else {
-        audio.pause();
-        playBtn.textContent = '▶';
-    }
+    audio.paused ? (audio.play(), playBtn.textContent = '⏸') : (audio.pause(), playBtn.textContent = '▶');
 });
 
 function render() {
-    // 1. Progress Bar Update
     if (!audio.paused && !isDragging && audio.duration) {
         progressBar.style.width = (audio.currentTime / audio.duration) * 100 + '%';
     }
 
-    // 2. Visualizer Logic
     if (analyser && !audio.paused) {
         analyser.getByteFrequencyData(dataArray);
+
         const bufferLength = dataArray.length;
         let points = [];
 
         for (let i = 0; i < POINT_COUNT; i++) {
-            // Sampling mid-high frequencies (bird chirps)
             const baseIndex = Math.floor((i / POINT_COUNT) * (bufferLength * 0.45));
             let val = (dataArray[baseIndex] + (dataArray[baseIndex-1] || 0) + (dataArray[baseIndex+1] || 0)) / 3;
             
             let norm = val / 255;
-            let threshold = 0.35; // Noise floor
+            let threshold = 0.35; 
             let targetDisplacement = 0;
 
             if (norm > threshold) {
                 let activeVal = (norm - threshold) / (1 - threshold);
-                activeVal = Math.sin(activeVal * Math.PI / 2); // Smooth base transition
+                activeVal = Math.sin(activeVal * Math.PI / 2);
+                // Multiplier 0.95 ensures it reaches nearly the top but never clips
                 targetDisplacement = Math.pow(activeVal, 1.2) * (VIS_HEIGHT * 0.95);
             }
 
             const targetY = (VIS_HEIGHT - 1) - targetDisplacement;
 
-            // ASYMMETRIC SMOOTHING: Snap up, drift down
+            // Asymmetric Smoothing
             if (targetY < currentY[i]) {
-                currentY[i] += (targetY - currentY[i]) * 0.8; 
+                currentY[i] += (targetY - currentY[i]) * 0.8;
             } else {
                 currentY[i] += (targetY - currentY[i]) * 0.15;
             }
@@ -109,7 +101,6 @@ function render() {
             points.push({ x: i, y: currentY[i] });
         }
 
-        // Draw Quadratic Bezier Path
         let d = `M ${points[0].x} ${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
             const xc = (points[i].x + points[i + 1].x) / 2;
@@ -118,13 +109,12 @@ function render() {
         }
         visualPath.setAttribute("d", d);
 
-    } else if (audio.paused && !isDragging) {
+    } else if (audio.paused) {
+        // Keeps the line at the rest state while paused
         drawRestState();
     }
-
     requestAnimationFrame(render);
 }
-
 requestAnimationFrame(render);
 
 // Dragging Logic
@@ -136,21 +126,16 @@ const handleMove = (e) => {
     progressBar.style.width = percentage + '%';
     if (audio.duration) audio.currentTime = (percentage / 100) * audio.duration;
 };
-
 progressContainer.addEventListener('mousedown', (e) => {
     isDragging = true;
     wasPlayingBeforeDrag = !audio.paused;
     audio.pause();
     handleMove(e);
 });
-
 window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e); });
 window.addEventListener('mouseup', () => {
     if (isDragging) {
         isDragging = false;
-        if (wasPlayingBeforeDrag) {
-            audio.play();
-            playBtn.textContent = '⏸';
-        }
+        if (wasPlayingBeforeDrag) audio.play();
     }
 });
