@@ -130,30 +130,21 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
 
 
 #playBtn {
-
-background: none;
-
-border: none;
-
-color: black;
-
-cursor: pointer;
-
-width: 25px; /* Wider for icons */
-
-font-size: 1.2rem;
-
-display: flex;
-
-justify-content: flex-start;
-
-padding: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    width: 28px;   /* Fixed size ensures the layout doesn't move */
+    height: 28px; 
+    display: flex;
+    align-items: center; /* Vertically centers the SVG */
+    justify-content: flex-start; /* Keeps it aligned with the track */
+    cursor: pointer;
+    
+    /* Crucial mobile/UI fixes from your version */
     -webkit-tap-highlight-color: transparent; 
-    font-family: sans-serif;
     -webkit-user-select: none;
     user-select: none;
     outline: none;
-
 }
 
 
@@ -217,7 +208,7 @@ padding: 0;
 
 </div>
 
-<p>bla4 xeno-canto.org (XC670887)<br>Z. D.<br>Burley, Hampshire, England, United Kingdom</p>
+<p>bla5 xeno-canto.org (XC670887)<br>Z. D.<br>Burley, Hampshire, England, United Kingdom</p>
 
 </div>
 
