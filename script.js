@@ -62,6 +62,7 @@ function initAudio() {
 }
 
 playBtn.addEventListener('click', () => {
+    isDragging = false;
     initAudio();
     if (audioContext && audioContext.state === 'suspended') audioContext.resume();
     
@@ -164,3 +165,4 @@ window.addEventListener('touchmove', (e) => {
 
 window.addEventListener('mouseup', stopDrag);
 window.addEventListener('touchend', stopDrag);
+window.addEventListener('touchcancel', stopDrag);
