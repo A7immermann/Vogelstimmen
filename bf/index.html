@@ -1,223 +1,164 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='16.5' fill='%23e50069'/></svg>">
-
-<style>
-
-@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;600&family=Poppins:ital,wght@0,600;1,300&display=swap');
-
-
-body {
-
-margin: 0;
-
-padding: 0;
-
-overflow-x: hidden;
-
-width: 100%;
-
-}
-
-
-.header-box {
-
-background-color: #fff5d6;
-
-padding: 15px 20px;
-
-width: 100%;
-
-}
-
-
-.german-name { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 1.4rem; display: block; }
-
-.latin-name { font-family: 'Poppins', sans-serif; font-weight: 300; font-style: italic; font-size: 1.1rem; color: #444; }
-
-
-.info-box {
-
-padding: 20px;
-
-font-family: 'Jost', sans-serif;
-
-font-weight: 300;
-
-color: #333;
-
-line-height: 1.6;
-
-}
-
-
-.custom-player {
-    display: flex;
-    /* This ensures the button and the track area sit on the same 'floor' */
-    align-items: flex-end; 
-    gap: 15px;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 25px;
-    }
-
-.player-track-area {
-
-display: flex;
-
-flex-direction: column;
-
-flex-grow: 1; /* Takes up all available space */
-
-min-width: 0; /* Critical for preventing flex-items from overflowing */
-
-}
-
-
-.progress-container {
-
-width: 100%;
-
-height: 3.5px;
-
-background: #fff5d6;
-
-cursor: pointer;
-
-position: relative;
-
-border-radius: 4px;
-
-/* TR B L shorthand: 10px vertical click area, 0px horizontal */
-
-padding: 10px 0;
-
-background-clip: content-box;
-
-}
-
-
-.progress-container::after {
-
-content: "";
-
-position: absolute;
-
-top: 10px; left: 0; right: 0; bottom: 10px;
-
-border: .5px solid black;
-
-border-radius: 4px;
-
-pointer-events: none;
-
-}
-
-
-#progressBar {
-
-width: 0%;
-
-height: 100%;
-
-background: #000;
-
-border-radius: 4px;
-
-}
-
-
-#playBtn {
-
-background: none;
-
-border: none;
-
-color: black;
-
-cursor: pointer;
-
-width: 25px; /* Wider for icons */
-
-font-size: 1.2rem;
-
-display: flex;
-
-justify-content: flex-start;
-
-padding: 0;
-
-}
-
-
-.visualizer-container {
-    width: 100%;
-    height: 30px;
-    margin: 0;
-    display: block;
-    /* This acts as your clipping mask */
-    overflow: hidden; 
-    position: relative;
-}
-
-.visualizer-container svg {
-    display: block;
-    /* Make it wider than the container to hide the jumping ends */
-    width: 104%; 
-    height: 100%;
-    /* Center it so 2% is cut off on the left and 2% on the right */
-    position: absolute;
-    left: -2%; 
-    overflow: visible;
-}
-
-
-</style>
-
-<script src="../script.js" defer></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='30' fill='%23fff5d6'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-family='sans-serif' font-size='60' fill='black'>♫</text></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;600&family=Poppins:ital,wght@0,600;1,300&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+            overscroll-behavior: none;
+            height: 100%;
+        }
+
+        .header-box {
+            background-color: #fff5d6;
+            padding: 15px 20px;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        .german-name {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 1.4rem;
+            display: block;
+        }
+
+        .latin-name {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 300;
+            font-style: italic;
+            font-size: 1.1rem;
+            color: #444;
+        }
+
+        .info-box {
+            padding: 20px;
+            font-family: 'Jost', sans-serif;
+            font-weight: 300;
+            color: #333;
+            line-height: 1.6;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        .custom-player {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 25px;
+        }
+
+        .player-track-area {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 24px;
+            cursor: pointer;
+            position: relative;
+            background-color: #fff5d6;
+            background-clip: content-box;
+            padding: 10px 0;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 100%;
+            background: #000;
+            border-radius: 4px;
+        }
+
+        .progress-container::after {
+            content: "";
+            position: absolute;
+            top: 10px;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            border: 0.5px solid black;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        #playBtn {
+            background: none;
+            border: none;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
+            touch-action: manipulation;
+        }
+
+        .visualizer-container {
+            width: 100%;
+            height: 30px;
+            margin: 0;
+            display: block;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .visualizer-container svg {
+            display: block;
+            width: 104%;
+            height: 100%;
+            position: absolute;
+            left: -2%;
+            overflow: visible;
+        }
+    </style>
+    <script src="../script.js" defer></script>
 </head>
-
 <body>
-
-<div class="header-box">
-
-<span class="german-name">Buchfink</span>
-
-<span class="latin-name">Fringilla coelebs</span>
-
-</div>
-
-<div class="info-box">
-
-<div class="custom-player">
-
-<button id="playBtn">▶</button>
-
-<div class="player-track-area">
-
-<div class="visualizer-container" id="visualizer"></div>
-
-<div class="progress-container">
-
-<div id="progressBar"></div>
-
-</div>
-
-</div>
-
-<audio id="myAudio" src="../audio/bf.mp3" preload="metadata"></audio>
-
-</div>
-
-<p>xeno-canto.org (XC1088506)<br>Sonothèque ADVL<br>Vains, Manche, Normandie, France</p>
-
-</div>
-
+    <div class="header-box">
+        <span class="german-name">Buchfink</span>
+        <span class="latin-name">Fringilla coelebs</span>
+    </div>
+    <div class="info-box">
+        <div class="custom-player">
+            <button id="playBtn">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;">
+                    <path d="M5 5v14l15-7z" stroke="black" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="player-track-area">
+                <div class="visualizer-container" id="visualizer"></div>
+                <div class="progress-container">
+                    <div id="progressBar"></div>
+                </div>
+            </div>
+            <audio id="myAudio" src="../audio/bf.mp3" preload="metadata"></audio>
+        </div>
+        <p>xeno-canto.org (XC1088506)<br>Sonothèque ADVL<br>Vains, Manche, Normandie, France</p>
+    </div>
 </body>
-
-</html> 
+</html>
