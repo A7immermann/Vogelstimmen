@@ -36,6 +36,7 @@ html, body {
     justify-content: space-between;
     align-items: flex-start;
     position: relative;
+    overflow: visible !important;
 
 }
 
@@ -145,13 +146,10 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
 
 .progress-container {
     width: 100%;
-    /* We increase this to 24px so the 10px padding has room */
     height: 24px; 
     cursor: pointer;
     position: relative;
-    /* This is your "unfilled" yellow color */
     background-color: #fff5d6; 
-    /* This ensures the background only fills the 4px track, not the padding */
     background-clip: content-box; 
     padding: 10px 0;
     
