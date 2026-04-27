@@ -3,6 +3,9 @@ const playBtn = document.getElementById('playBtn');
 const progressBar = document.getElementById('progressBar');
 const progressContainer = document.querySelector('.progress-container');
 const visualizerContainer = document.getElementById('visualizer');
+const menuBtn = document.getElementById('menuBtn');
+const dropdownMenu = document.getElementById('dropdownMenu');
+const menuLinks = document.querySelectorAll('.dropdown-content a');
 
 let isDragging = false;
 let wasPlayingBeforeDrag = false;
@@ -12,7 +15,7 @@ const POINT_COUNT = 80;
 const VIS_HEIGHT = 100; 
 let currentY = new Array(POINT_COUNT).fill(VIS_HEIGHT - 1);
 
-// SVG Icons with rounded corners
+// SVG Icons
 const ICON_PLAY = `<svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;"><path d="M5 5v14l15-7z" stroke="black" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 const ICON_PAUSE = `<svg viewBox="0 0 24 24" width="22" height="22" fill="black" style="display:block;"><rect x="5" y="5" width="4" height="14" rx="1.5" stroke="black" stroke-width="1.5"/><rect x="15" y="5" width="4" height="14" rx="1.5" stroke="black" stroke-width="1.5"/></svg>`;
 
@@ -119,6 +122,7 @@ function render() {
 }
 requestAnimationFrame(render);
 
+// --- PLAYER DRAG LOGIC ---
 const handleMove = (e) => {
     const rect = progressContainer.getBoundingClientRect();
     let clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
@@ -167,50 +171,61 @@ window.addEventListener('mouseup', stopDrag);
 window.addEventListener('touchend', stopDrag);
 window.addEventListener('touchcancel', stopDrag);
 
-// Sandwich Menu Toggle
-const menuBtn = document.getElementById('menuBtn');
-const dropdownMenu = document.getElementById('dropdownMenu');
-
+// --- SANDWICH MENU LOGIC ---
 if (menuBtn) {
     menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Clear highlights when opening
         menuLinks.forEach(l => l.classList.remove('active-touch'));
         dropdownMenu.classList.toggle('show');
     });
 }
 
-// Close menu if user clicks anywhere else
 window.addEventListener('click', () => {
     if (dropdownMenu && dropdownMenu.classList.contains('show')) {
         dropdownMenu.classList.remove('show');
     }
 });
 
-// --- MOBILE SWIPE-TO-HIGHLIGHT MENU ---
-const menuLinks = document.querySelectorAll('.dropdown-content a');
+// --- IMPROVED MENU TOUCH TRACKING ---
+dropdownMenu.addEventListener('touchstart', (e) => {
+    menuLinks.forEach(l => l.classList.remove('active-touch'));
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const link = el?.closest('a');
+    if (link) link.classList.add('active-touch');
+}, { passive: true });
 
 dropdownMenu.addEventListener('touchmove', (e) => {
-    // Prevent the page from scrolling while you're picking a bird
-    e.preventDefault(); 
-    
-    const touch = e.touches[0];
-    // Find which element is currently under the finger
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    menuLinks.forEach(link => {
-        if (link === el) {
-            link.classList.add('active-touch');
-        } else {
-            link.classList.remove('active-touch');
-        }
-    });
+    // Check if the menu is open before preventing default (safety check)
+    if (dropdownMenu.classList.contains('show')) {
+        e.preventDefault(); 
+        const touch = e.touches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const link = el?.closest('a');
+        
+        menuLinks.forEach(l => {
+            if (l === link) {
+                l.classList.add('active-touch');
+            } else {
+                l.classList.remove('active-touch');
+            }
+        });
+    }
 }, { passive: false });
 
 dropdownMenu.addEventListener('touchend', (e) => {
     const activeLink = dropdownMenu.querySelector('.active-touch');
     if (activeLink) {
-        // Navigate to the bird link when you let go
-        window.location.href = activeLink.getAttribute('href');
+        const url = activeLink.getAttribute('href');
+        dropdownMenu.classList.remove('show'); 
+        window.location.href = url;
+    }
+});
+
+// Reset menu on page show (Back button fix)
+window.addEventListener('pageshow', (event) => {
+    if (dropdownMenu) {
+        dropdownMenu.classList.remove('show');
+        menuLinks.forEach(link => link.classList.remove('active-touch'));
     }
 });
