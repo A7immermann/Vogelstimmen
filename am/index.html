@@ -87,39 +87,33 @@
     }
 
     .dropdown-content a {
-        color: black;
-        padding: 10px 16px;
-        text-decoration: none;
-        display: block;
-        border-bottom: 0.5px solid black;
-        transition: all 0.2s ease;
-    }
+    color: black;
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 0.5px solid black;
+    transition: background-color 0.2s ease, padding-left 0.2s ease;
+    -webkit-tap-highlight-color: transparent; /* Removes the default grey box on tap */
+}
 
     .dropdown-content a:last-child {
         border-bottom: none;
     }
 
     /* Hover effect for laptop */
-    .dropdown-content a:hover, 
-    .dropdown-content a:active {
+    @media (hover: hover) {
+    .dropdown-content a:hover {
         background-color: #fff5d6;
         padding-left: 25px;
         font-weight: 600;
     }
+}
 
    .dropdown-content a.active-touch {
     background-color: #fff5d6 !important;
     padding-left: 25px !important;
     font-weight: 600 !important;
     letter-spacing: 0.5px;
-}
-
-@media (hover: hover) {
-    .dropdown-content a:hover {
-        background-color: #fff5d6;
-        padding-left: 25px;
-        font-weight: 600;
-    }
 }
 
     /* Info Box & Player Styles */

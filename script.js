@@ -175,18 +175,23 @@ window.addEventListener('touchcancel', stopDrag);
 if (menuBtn) {
     menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        // Clear all highlights before opening
         menuLinks.forEach(l => l.classList.remove('active-touch'));
         dropdownMenu.classList.toggle('show');
     });
 }
 
-window.addEventListener('click', () => {
+// Close menu if user clicks/taps outside
+window.addEventListener('click', (e) => {
     if (dropdownMenu && dropdownMenu.classList.contains('show')) {
-        dropdownMenu.classList.remove('show');
+        // Only close if the click wasn't inside the menu button
+        if (!menuBtn.contains(e.target)) {
+            dropdownMenu.classList.remove('show');
+        }
     }
 });
 
-// --- IMPROVED MENU TOUCH TRACKING ---
+// --- MOBILE SWIPE-TO-HIGHLIGHT ---
 dropdownMenu.addEventListener('touchstart', (e) => {
     menuLinks.forEach(l => l.classList.remove('active-touch'));
     const touch = e.touches[0];
@@ -196,9 +201,8 @@ dropdownMenu.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 dropdownMenu.addEventListener('touchmove', (e) => {
-    // Check if the menu is open before preventing default (safety check)
     if (dropdownMenu.classList.contains('show')) {
-        e.preventDefault(); 
+        e.preventDefault(); // Stop page scroll while picking
         const touch = e.touches[0];
         const el = document.elementFromPoint(touch.clientX, touch.clientY);
         const link = el?.closest('a');
@@ -217,15 +221,20 @@ dropdownMenu.addEventListener('touchend', (e) => {
     const activeLink = dropdownMenu.querySelector('.active-touch');
     if (activeLink) {
         const url = activeLink.getAttribute('href');
+        // CRITICAL: Hide menu immediately before navigating
         dropdownMenu.classList.remove('show'); 
         window.location.href = url;
     }
 });
 
-// Reset menu on page show (Back button fix)
+// --- THE "BACK BUTTON" REPAIR ---
 window.addEventListener('pageshow', (event) => {
+    // 'persisted' is true if the page was loaded from cache (Back button)
+    // We force a reset regardless to be 100% sure.
     if (dropdownMenu) {
         dropdownMenu.classList.remove('show');
-        menuLinks.forEach(link => link.classList.remove('active-touch'));
+        menuLinks.forEach(link => {
+            link.classList.remove('active-touch');
+        });
     }
 });
