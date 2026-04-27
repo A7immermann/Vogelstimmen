@@ -174,6 +174,8 @@ const dropdownMenu = document.getElementById('dropdownMenu');
 if (menuBtn) {
     menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        // Clear highlights when opening
+        menuLinks.forEach(l => l.classList.remove('active-touch'));
         dropdownMenu.classList.toggle('show');
     });
 }
@@ -182,5 +184,33 @@ if (menuBtn) {
 window.addEventListener('click', () => {
     if (dropdownMenu && dropdownMenu.classList.contains('show')) {
         dropdownMenu.classList.remove('show');
+    }
+});
+
+// --- MOBILE SWIPE-TO-HIGHLIGHT MENU ---
+const menuLinks = document.querySelectorAll('.dropdown-content a');
+
+dropdownMenu.addEventListener('touchmove', (e) => {
+    // Prevent the page from scrolling while you're picking a bird
+    e.preventDefault(); 
+    
+    const touch = e.touches[0];
+    // Find which element is currently under the finger
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    menuLinks.forEach(link => {
+        if (link === el) {
+            link.classList.add('active-touch');
+        } else {
+            link.classList.remove('active-touch');
+        }
+    });
+}, { passive: false });
+
+dropdownMenu.addEventListener('touchend', (e) => {
+    const activeLink = dropdownMenu.querySelector('.active-touch');
+    if (activeLink) {
+        // Navigate to the bird link when you let go
+        window.location.href = activeLink.getAttribute('href');
     }
 });
