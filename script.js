@@ -166,3 +166,21 @@ window.addEventListener('touchmove', (e) => {
 window.addEventListener('mouseup', stopDrag);
 window.addEventListener('touchend', stopDrag);
 window.addEventListener('touchcancel', stopDrag);
+
+// Sandwich Menu Toggle
+const menuBtn = document.getElementById('menuBtn');
+const dropdownMenu = document.getElementById('dropdownMenu');
+
+if (menuBtn) {
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle('show');
+    });
+}
+
+// Close menu if user clicks anywhere else
+window.addEventListener('click', () => {
+    if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+        dropdownMenu.classList.remove('show');
+    }
+});
