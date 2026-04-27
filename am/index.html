@@ -40,6 +40,11 @@ html, body {
 
 }
 
+.name-stack {
+    display: flex;
+    flex-direction: column;
+}
+
 .menu-container {
     position: relative;
     display: inline-block;
@@ -58,7 +63,7 @@ html, body {
 
 .menu-line {
     width: 30px;
-    height: 6px;
+    height: 4px;
     background-color: white;
     border: 0.5px solid black;
     border-radius: 2px;
@@ -75,7 +80,20 @@ html, body {
     z-index: 1000;
     font-family: 'Jost', sans-serif;
     box-shadow: 0px 8px 16px rgba(0,0,0,0.1); 
+display: block;
+    transition: all 0.2s ease; /* Smooths the growing effect */
+    transform-origin: left;    /* Grows from the left side */
 }
+
+/* Laptop Hover & Mobile Active State */
+.dropdown-content a:hover, 
+.dropdown-content a:active {
+    background-color: #fff5d6; /* Matches your header yellow */
+    padding-left: 25px;        /* Shifts text right slightly */
+    font-weight: 600;          /* Makes text bolder */
+    letter-spacing: 0.5px;
+}
+
 
 /* This is the magic part that actually makes it appear */
 .dropdown-content.show {
@@ -83,8 +101,8 @@ html, body {
 }
 
 .dropdown-content a {
-    color: #333;
-    padding: 12px 16px;
+    color: black;
+    padding: 7px 16px;
     text-decoration: none;
     display: block;
     border-bottom: 0.5px solid black;
@@ -233,10 +251,11 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
 <body>
 
 <div class="header-box">
-
+<div class="name-stack">
 <span class="german-name">Amsel</span>
 
 <span class="latin-name">Turdus merula</span>
+</div>
 <div class="menu-container">
     <button class="menu-btn" id="menuBtn">
         <div class="menu-line"></div>
@@ -244,17 +263,17 @@ min-width: 0; /* Critical for preventing flex-items from overflowing */
         <div class="menu-line"></div>
     </button>
     <div class="dropdown-content" id="dropdownMenu">
-        <a href="am.html">Amsel</a>
-        <a href="bm.html">Blaumeise</a>
-        <a href="bf.html">Buchfink</a>
-        <a href="hrs.html">Hausrotschwanz</a>
-        <a href="kb.html">Kleiber</a>
-        <a href="km.html">Kohlmeise</a>
-        <a href="mgm.html">Mönchsgrasmücke</a>
-        <a href="rk.html">Rotkehlchen</a>
-        <a href="st.html">Star</a>
-        <a href="zk.html">Zaunkönig</a>
-    </div>
+    <a href="../am/">Amsel</a>
+    <a href="../bm/">Blaumeise</a>
+    <a href="../bf/">Buchfink</a>
+    <a href="../hrs/">Hausrotschwanz</a>
+    <a href="../kb/">Kleiber</a>
+    <a href="../km/">Kohlmeise</a>
+    <a href="../mgm/">Mönchsgrasmücke</a>
+    <a href="../rk/">Rotkehlchen</a>
+    <a href="../st/">Star</a>
+    <a href="../zk/">Zaunkönig</a>
+</div>
 </div>
 
 </div>
